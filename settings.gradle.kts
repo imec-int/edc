@@ -215,3 +215,5 @@ include(":system-tests:telemetry:telemetry-test-runner")
 include(":system-tests:telemetry:telemetry-test-runtime")
 
 include(":version-catalog")
+
+include(":ngsi")
