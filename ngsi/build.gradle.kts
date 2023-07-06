@@ -36,12 +36,6 @@ application {
     mainClass.set("$group.boot.system.runtime.BaseRuntime")
 }
 
-// The "run" task added by the application plugin is of type JavaExec.
-tasks.withType<JavaExec> {
-    // Assign all system properties from the (gradle) command line (-Dedc.*) to the JavaExec task.
-    systemProperties(System.getProperties().mapKeys { it.key.toString() })
-}
-
 var distTar = tasks.getByName("distTar")
 var distZip = tasks.getByName("distZip")
 
