@@ -22,6 +22,8 @@ dependencies {
     implementation(project(":extensions:control-plane:api:management-api"))
     implementation(project(":extensions:control-plane:transfer:transfer-data-plane"))
 
+    implementation(project(":extensions:control-plane:transfer:transfer-pull-http-dynamic-receiver"))
+
     implementation(project(":extensions:data-plane:data-plane-client"))
     implementation(project(":extensions:data-plane-selector:data-plane-selector-api"))
     implementation(project(":core:data-plane-selector:data-plane-selector-core"))
@@ -41,6 +43,6 @@ var distZip = tasks.getByName("distZip")
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
     mergeServiceFiles()
-    archiveFileName.set("push-connector.jar")
+    archiveFileName.set("pull-connector.jar")
     dependsOn(distTar, distZip)
 }
