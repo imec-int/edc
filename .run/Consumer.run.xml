@@ -1,0 +1,33 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Consumer" type="GradleRunConfiguration" factoryName="Gradle">
+    <ExternalSystemSettings>
+      <option name="env">
+        <map>
+          <entry key="EDC_FS_CONFIG" value="./config/consumer/consumer-config.properties" />
+          <entry key="EDC_KEYSTORE" value="./certs/cert.pfx" />
+          <entry key="EDC_KEYSTORE_PASSWORD" value="123456" />
+          <entry key="EDC_VAULT" value="./config/consumer/consumer-vault.properties" />
+        </map>
+      </option>
+      <option name="executionName" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/ngsi" />
+      <option name="externalSystemIdString" value="GRADLE" />
+      <option name="passParentEnvs" value="false" />
+      <option name="scriptParameters" value="" />
+      <option name="taskDescriptions">
+        <list />
+      </option>
+      <option name="taskNames">
+        <list>
+          <option value="run" />
+        </list>
+      </option>
+      <option name="vmOptions" />
+    </ExternalSystemSettings>
+    <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
+    <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+    <DebugAllEnabled>false</DebugAllEnabled>
+    <ForceTestExec>false</ForceTestExec>
+    <method v="2" />
+  </configuration>
+</component>
