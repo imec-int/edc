@@ -33,11 +33,11 @@ import org.slf4j.LoggerFactory;
 
 public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
   Logger log = LoggerFactory.getLogger(this.getClass().getName());
-  RestEmitter emitter = RestEmitter.createWithDefaults();
+
 
   final String entityType = "dataset";
 /***
- * editableDatasetProperties aspect of dataset entity
+ * editableDatasetProperties aspect of dataset entity - see details on datahub documentation for dataset entity aspects
  * */
   private DatasetProperties _datasetProperties(Asset asset) {
     var createdAt=new com.linkedin.common.TimeStamp();
@@ -63,12 +63,20 @@ public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
     return new SchemaMetadata().setFields(fields);
   }
 
+  /***
+   * Returns datahub style urn for an asset - includes `test` as platform, and includes EDC asset name and id within the urn.
+   * The FabricType is the environment type such as Dev, Prod, etc.
+   * */
   public Urn _urn(Asset asset) throws URISyntaxException {
     return new DatasetUrn(_platformUrn(entityType), asset.getName()+asset.getId(), FabricType.DEV);
   }
 
   /***
    * This method emits whole dataset, with all aspects (defined within) to dataspace catalog. To only ingest/emit a single aspect, see specs.
+   * In this method, we first create a dataset with a single aspect - datasetProperties Aspect. Then, we create other aspects such as
+   * schemaMetadata and editableProperties aspects, and ingest them in parallel.
+   * Usually it can be done sequentially, but this is to show that, if an entity already exists, then aspects can be pushed in parallel as well.
+   * Since the calls are asynchronous, the datahub api at the receiving end will respond asynchronously.
    * */
   public Urn emitMetadataChangeProposal(Asset asset)
       throws URISyntaxException, IOException, ExecutionException, InterruptedException {
