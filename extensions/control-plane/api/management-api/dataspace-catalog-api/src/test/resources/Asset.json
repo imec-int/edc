@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "edc": "https://w3id.org/edc/v0.0.1/ns/"
+  },
+  "asset": {
+    "@id": "${assetId}",
+    "properties": {
+      "name": "product description",
+      "contenttype": "application/json"
+    }
+  },
+  "dataAddress": {
+    "name": "Test asset",
+    "baseUrl": "${source}",
+    "type": "HttpData"
+  }
+}
