@@ -26,7 +26,9 @@ public class DataSpaceCatalogTest extends DatasetEntityIngestor {
 
   @Test
   void ingestDataSetEntity() throws URISyntaxException, IOException {
-    URL resource = null; // getClass().getClassLoader().getResource("asset.json");
+    ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+    URL resource = classloader.getResource("asset.json");
+
     try (JsonReader jsonReader = Json.createReader(new StringReader(Files.readString(Paths.get(resource.toURI()))))) {
 
       JsonObject readObject = jsonReader.readObject();
