@@ -39,7 +39,7 @@ abstract public class DataSpaceCatalogIngestorBase {
    * Use `conf` files to configure this.
    * */
   public DataPlatformUrn _platformUrn(String entityType) throws URISyntaxException {
-    return DataPlatformUrn.createFromUrn(DataPlatformUrn.createFromTuple(entityType, "test"));
+    return DataPlatformUrn.createFromUrn(DataPlatformUrn.createFromTuple(entityType, "test:PROD"));
   }
 
   /***

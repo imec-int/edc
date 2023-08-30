@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -42,8 +43,9 @@ public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
   private DatasetProperties _datasetProperties(Asset asset) {
     var createdAt=new com.linkedin.common.TimeStamp();
     createdAt.setTime(asset.getCreatedAt());
+    Map assetProps = (Map) ((Map) asset.getProperties().get("asset")).get("properties");
     return new DatasetProperties()
-        .setDescription(asset.getDescription())
+        .setDescription(assetProps.get("name").toString())
         .setCreated(createdAt);
 
   }
@@ -80,8 +82,21 @@ public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
    * */
   public Urn emitMetadataChangeProposal(Asset asset)
       throws URISyntaxException, IOException, ExecutionException, InterruptedException {
-    Urn datasetUrn = _urn(asset);
+    //Urn datasetUrn = _urn(asset);
+
+    //Extract EDC assets json properties.
+    Map assets = (Map) asset.getProperties().get("asset");
+    Map dataAddress = (Map) asset.getProperties().get("dataAddress");
+
+    // creat proper urn which can be feed to datahub api.
+    // need to be a data platfrom urn.
+    // Make asset id of edc data model become a part of the urn.
+
+    var urn = "urn:li:dataset:(urn:li:dataPlatform:EDIT_EDC_Platform,asset: "+(String) assets.get("@id")+",TEST)";
+    Urn datasetUrn = new Urn(urn);
     log.info("Pushing dataset to data space catalog");
+
+    // Emit datasetProperties aspect
     Future<MetadataWriteResponse> responseFuture = emitter.emit(_metadataChangeProposalWrapper(_datasetProperties(asset), entityType, datasetUrn));
     if(responseFuture.isDone() && responseFuture.get().isSuccess()){
       Future<MetadataWriteResponse> editablePropsFut = emitter.emit(_metadataChangeProposalWrapper(_editableDatasetProperties(asset), entityType, datasetUrn));

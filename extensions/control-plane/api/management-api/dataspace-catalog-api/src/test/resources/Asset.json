@@ -3,15 +3,16 @@
     "edc": "https://w3id.org/edc/v0.0.1/ns/"
   },
   "asset": {
-    "@id": "${assetId}",
+    "@id": "VSDS-IMEC-Test-Asset-ttl",
     "properties": {
-      "name": "product description",
-      "contenttype": "application/json"
+      "name": "LDES Server endpoint for blue-bilke data",
+      "contenttype": "text/turtle"
     }
   },
   "dataAddress": {
-    "name": "Test asset",
-    "baseUrl": "${source}",
-    "type": "HttpData"
+    "type": "HttpData",
+    "name": "VSDS-IMEC-Test",
+    "baseUrl": "https://openplanner.ilabt.imec.be/ldes/blue-bike",
+    "proxyPath": "true"
   }
 }
