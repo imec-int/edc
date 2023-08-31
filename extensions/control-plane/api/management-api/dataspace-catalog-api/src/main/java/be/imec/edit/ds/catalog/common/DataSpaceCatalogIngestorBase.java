@@ -35,11 +35,11 @@ abstract public class DataSpaceCatalogIngestorBase {
         .build();
   }
   /**
-   * At the moment, edc connectors are experimental. The data platforms (bigquery, snowflake, hudi etc.) are unknown and not provided, so we use `test`. But we can
+   * At the moment, edc connectors are experimental. The data platforms (bigquery, snowflake, hudi etc.) are unknown and not provided, so we use `imec-edc`. But we can
    * Use `conf` files to configure this.
    * */
   public DataPlatformUrn _platformUrn(String entityType) throws URISyntaxException {
-    return DataPlatformUrn.createFromUrn(DataPlatformUrn.createFromTuple(entityType, "test:PROD"));
+    return DataPlatformUrn.createFromUrn(DataPlatformUrn.createFromTuple(entityType, "IMEC_EDC_PLATFORM"));
   }
 
   /***

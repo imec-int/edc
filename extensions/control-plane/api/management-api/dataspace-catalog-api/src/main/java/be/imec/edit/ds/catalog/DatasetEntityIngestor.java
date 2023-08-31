@@ -37,6 +37,10 @@ public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
 
 
   final String entityType = "dataset";
+  final String platformType = "dataPlatform";
+
+
+
 /***
  * editableDatasetProperties aspect of dataset entity - see details on datahub documentation for dataset entity aspects
  * */
@@ -47,15 +51,19 @@ public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
     return new DatasetProperties()
         .setDescription(assetProps.get("name").toString())
         .setCreated(createdAt);
-
   }
 
   /***
  * editableDatasetProperties aspect of dataset entity
  * */
   private EditableDatasetProperties _editableDatasetProperties(Asset asset) {
-    return new EditableDatasetProperties();
+    Map assetProps = (Map) ((Map) asset.getProperties().get("asset")).get("properties");
+    return new EditableDatasetProperties()
+            .setDescription(assetProps.get("name").toString());
+
   }
+
+
   /***
    * schemaMetadata aspect of dataset entity
    * */
@@ -70,7 +78,8 @@ public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
    * The FabricType is the environment type such as Dev, Prod, etc.
    * */
   public Urn _urn(Asset asset) throws URISyntaxException {
-    return new DatasetUrn(_platformUrn(entityType), asset.getName()+asset.getId(), FabricType.DEV);
+    var assetName = ((Map) asset.getProperties().get("asset")).get("@id");
+    return new DatasetUrn(_platformUrn(platformType), "Data Asset: "+assetName, FabricType.DEV);
   }
 
   /***
@@ -82,25 +91,25 @@ public class DatasetEntityIngestor extends DataSpaceCatalogIngestorBase {
    * */
   public Urn emitMetadataChangeProposal(Asset asset)
       throws URISyntaxException, IOException, ExecutionException, InterruptedException {
-    //Urn datasetUrn = _urn(asset);
 
-    //Extract EDC assets json properties.
-    Map assets = (Map) asset.getProperties().get("asset");
-    Map dataAddress = (Map) asset.getProperties().get("dataAddress");
-
-    // creat proper urn which can be feed to datahub api.
-    // need to be a data platfrom urn.
-    // Make asset id of edc data model become a part of the urn.
-
-    var urn = "urn:li:dataset:(urn:li:dataPlatform:EDIT_EDC_Platform,asset: "+(String) assets.get("@id")+",TEST)";
-    Urn datasetUrn = new Urn(urn);
+    //Get the urn of the asset
+    Urn datasetUrn = _urn(asset);
     log.info("Pushing dataset to data space catalog");
 
     // Emit datasetProperties aspect
     Future<MetadataWriteResponse> responseFuture = emitter.emit(_metadataChangeProposalWrapper(_datasetProperties(asset), entityType, datasetUrn));
-    if(responseFuture.isDone() && responseFuture.get().isSuccess()){
+    var emitResponse = responseFuture.get();
+    // Emit other aspects in parallel
+    if(responseFuture.isDone() && emitResponse.isSuccess()){
+
+      //set and emit editable properties aspect to metadata model of datahub
       Future<MetadataWriteResponse> editablePropsFut = emitter.emit(_metadataChangeProposalWrapper(_editableDatasetProperties(asset), entityType, datasetUrn));
+
+
+      //set and emit data schema aspect to metadata model of datahub
       Future<MetadataWriteResponse> schemaPropsFut = emitter.emit(_metadataChangeProposalWrapper(_schemaMetadata(asset), entityType, datasetUrn));
+      var a = _editableDatasetProperties(asset);
+
       int numThreads = 2; // Number of threads in the thread pool
       ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       List<Future<MetadataWriteResponse>> futures = List.of(editablePropsFut, schemaPropsFut);
