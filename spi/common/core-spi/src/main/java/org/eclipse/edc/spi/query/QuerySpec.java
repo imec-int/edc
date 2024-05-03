@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.eclipse.edc.spi.CoreConstants.EDC_NAMESPACE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 
 /**
  * Specifies various query parameters for collection-like queries. Typical uses include API endpoints, where the query
@@ -35,7 +35,7 @@ public class QuerySpec {
     public static final String EDC_QUERY_SPEC_FILTER_EXPRESSION = EDC_NAMESPACE + "filterExpression";
     public static final String EDC_QUERY_SPEC_SORT_ORDER = EDC_NAMESPACE + "sortOrder";
     public static final String EDC_QUERY_SPEC_SORT_FIELD = EDC_NAMESPACE + "sortField";
-    
+
     private int offset = 0;
     private int limit = 50;
     private final List<Criterion> filterExpression = new ArrayList<>();
@@ -55,6 +55,43 @@ public class QuerySpec {
 
     public String getSortField() {
         return sortField;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    @JsonIgnore
+    public Range getRange() {
+        return new Range(offset, offset + limit);
+    }
+
+    public List<Criterion> getFilterExpression() {
+        return filterExpression;
+    }
+
+    public SortOrder getSortOrder() {
+        return sortOrder;
+    }
+
+    /**
+     * Checks whether any {@link Criterion} contains the given left-hand operand
+     */
+    public boolean containsAnyLeftOperand(String leftOperand) {
+        return getFilterExpression().stream().anyMatch(c -> c.getOperandLeft().toString().startsWith(leftOperand));
+    }
+
+    public Builder toBuilder() {
+        return new Builder()
+                .offset(offset)
+                .limit(limit)
+                .filter(filterExpression)
+                .sortOrder(sortOrder)
+                .sortField(sortField);
     }
 
     @Override
@@ -85,33 +122,6 @@ public class QuerySpec {
                 '}';
     }
 
-    public int getOffset() {
-        return offset;
-    }
-
-    public int getLimit() {
-        return limit;
-    }
-
-    @JsonIgnore
-    public Range getRange() {
-        return new Range(offset, offset + limit);
-    }
-
-    public List<Criterion> getFilterExpression() {
-        return filterExpression;
-    }
-
-    public SortOrder getSortOrder() {
-        return sortOrder;
-    }
-
-    /**
-     * Checks whether any {@link Criterion} contains the given left-hand operand
-     */
-    public boolean containsAnyLeftOperand(String leftOperand) {
-        return getFilterExpression().stream().anyMatch(c -> c.getOperandLeft().toString().startsWith(leftOperand));
-    }
 
     public static final class Builder {
         private final QuerySpec querySpec;

@@ -20,6 +20,10 @@ dependencies {
     testImplementation(project(":core:common:junit"))
     // gives access to the Json LD models, etc.
     testImplementation(project(":spi:common:json-ld-spi"))
+    testImplementation(project(":spi:control-plane:asset-spi"))
+    testImplementation(project(":spi:control-plane:contract-spi"))
+    testImplementation(project(":spi:data-plane-selector:data-plane-selector-spi"))
+    testImplementation(project(":core:common:connector-core"))
 
     //useful for generic DTOs etc.
     testImplementation(project(":extensions:common:api:api-core"))
@@ -27,6 +31,7 @@ dependencies {
     testImplementation(project(":spi:control-plane:transfer-spi"))
 
     //we need the JacksonJsonLd util class
+    testImplementation(project(":core:common:lib:json-ld-lib"))
     testImplementation(project(":extensions:common:json-ld"))
 
     testImplementation(libs.restAssured)
@@ -34,6 +39,9 @@ dependencies {
     testImplementation(libs.awaitility)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.jakartaJson)
+    testImplementation(testFixtures(project(":extensions:common:sql:sql-core")))
+    testImplementation(libs.testcontainers.junit)
+    testImplementation(libs.testcontainers.postgres)
 
     testCompileOnly(project(":system-tests:management-api:management-api-test-runtime"))
 }

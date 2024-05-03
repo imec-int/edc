@@ -16,8 +16,8 @@ package org.eclipse.edc.protocol.dsp.negotiation.transform.to;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.connector.contract.spi.types.agreement.ContractAgreement;
-import org.eclipse.edc.connector.contract.spi.types.agreement.ContractAgreementMessage;
+import org.eclipse.edc.connector.controlplane.contract.spi.types.agreement.ContractAgreement;
+import org.eclipse.edc.connector.controlplane.contract.spi.types.agreement.ContractAgreementMessage;
 import org.eclipse.edc.jsonld.spi.transformer.AbstractJsonLdTransformer;
 import org.eclipse.edc.policy.model.Policy;
 import org.eclipse.edc.transform.spi.TransformerContext;
@@ -29,12 +29,14 @@ import java.time.format.DateTimeParseException;
 import java.util.Set;
 
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
-import static org.eclipse.edc.protocol.dsp.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_AGREEMENT;
-import static org.eclipse.edc.protocol.dsp.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_CONSUMER_ID;
-import static org.eclipse.edc.protocol.dsp.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_PROVIDER_ID;
-import static org.eclipse.edc.protocol.dsp.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_TIMESTAMP;
-import static org.eclipse.edc.protocol.dsp.type.DspNegotiationPropertyAndTypeNames.DSPACE_TYPE_CONTRACT_AGREEMENT_MESSAGE;
-import static org.eclipse.edc.protocol.dsp.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_PROCESS_ID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_AGREEMENT;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_CONSUMER_ID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_PROVIDER_ID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspNegotiationPropertyAndTypeNames.DSPACE_PROPERTY_TIMESTAMP;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspNegotiationPropertyAndTypeNames.DSPACE_TYPE_CONTRACT_AGREEMENT_MESSAGE;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_CONSUMER_PID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_PROCESS_ID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_PROVIDER_PID;
 
 /**
  * Creates a {@link ContractAgreementMessage} from a {@link JsonObject}.
@@ -50,13 +52,30 @@ public class JsonObjectToContractAgreementMessageTransformer extends AbstractJso
     @Override
     public @Nullable ContractAgreementMessage transform(@NotNull JsonObject object, @NotNull TransformerContext context) {
         var messageBuilder = ContractAgreementMessage.Builder.newInstance();
-        if (!transformMandatoryString(object.get(DSPACE_PROPERTY_PROCESS_ID), messageBuilder::processId, context)) {
-            context.problem()
-                    .missingProperty()
-                    .type(DSPACE_TYPE_CONTRACT_AGREEMENT_MESSAGE)
-                    .property(DSPACE_PROPERTY_PROCESS_ID)
-                    .report();
-            return null;
+        var processId = object.get(DSPACE_PROPERTY_PROCESS_ID);
+        if (!transformMandatoryString(object.get(DSPACE_PROPERTY_CONSUMER_PID), messageBuilder::consumerPid, context)) {
+            if (processId == null) {
+                context.problem()
+                        .missingProperty()
+                        .type(DSPACE_TYPE_CONTRACT_AGREEMENT_MESSAGE)
+                        .property(DSPACE_PROPERTY_CONSUMER_PID)
+                        .report();
+                return null;
+            } else {
+                messageBuilder.consumerPid(transformString(processId, context));
+            }
+        }
+        if (!transformMandatoryString(object.get(DSPACE_PROPERTY_PROVIDER_PID), messageBuilder::providerPid, context)) {
+            if (processId == null) {
+                context.problem()
+                        .missingProperty()
+                        .type(DSPACE_TYPE_CONTRACT_AGREEMENT_MESSAGE)
+                        .property(DSPACE_PROPERTY_PROVIDER_PID)
+                        .report();
+                return null;
+            } else {
+                messageBuilder.providerPid(transformString(processId, context));
+            }
         }
 
         var jsonAgreement = returnMandatoryJsonObject(object.get(DSPACE_PROPERTY_AGREEMENT), context, DSPACE_PROPERTY_AGREEMENT);
@@ -107,9 +126,17 @@ public class JsonObjectToContractAgreementMessageTransformer extends AbstractJso
                     .report();
             return null;
         }
-        builder.id(agreementId);
 
-        if (!transformMandatoryString(jsonAgreement.get(DSPACE_PROPERTY_CONSUMER_ID), builder::consumerId, context)) {
+        var assignee = policy.getAssignee();
+        var assigner = policy.getAssigner();
+
+        builder.id(agreementId)
+                .consumerId(assignee)
+                .providerId(assigner)
+                .policy(policy)
+                .assetId(policy.getTarget());
+
+        if (assignee == null && !transformMandatoryString(jsonAgreement.get(DSPACE_PROPERTY_CONSUMER_ID), builder::consumerId, context)) {
             context.problem()
                     .missingProperty()
                     .type(DSPACE_TYPE_CONTRACT_AGREEMENT_MESSAGE)
@@ -118,7 +145,7 @@ public class JsonObjectToContractAgreementMessageTransformer extends AbstractJso
             return null;
         }
 
-        if (!transformMandatoryString(jsonAgreement.get(DSPACE_PROPERTY_PROVIDER_ID), builder::providerId, context)) {
+        if (assigner == null && !transformMandatoryString(jsonAgreement.get(DSPACE_PROPERTY_PROVIDER_ID), builder::providerId, context)) {
             context.problem()
                     .missingProperty()
                     .type(DSPACE_TYPE_CONTRACT_AGREEMENT_MESSAGE)
@@ -126,9 +153,6 @@ public class JsonObjectToContractAgreementMessageTransformer extends AbstractJso
                     .report();
             return null;
         }
-
-        builder.policy(policy);
-        builder.assetId(policy.getTarget());
 
         var timestamp = transformString(jsonAgreement.get(DSPACE_PROPERTY_TIMESTAMP), context);
         if (timestamp == null) {

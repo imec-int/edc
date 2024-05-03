@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2022 Daimler TSS GmbH
+ *  Copyright (c) 2024 Bayerische Motoren Werke Aktiengesellschaft (BMW AG)
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -8,25 +8,19 @@
  *  SPDX-License-Identifier: Apache-2.0
  *
  *  Contributors:
- *       Daimler TSS GmbH - Initial implementation
+ *       Bayerische Motoren Werke Aktiengesellschaft (BMW AG) - initial API and implementation
  *
  */
 
 package org.eclipse.edc.iam.did.spi.resolution;
 
-import org.eclipse.edc.iam.did.spi.key.PublicKeyWrapper;
+import org.eclipse.edc.keys.spi.PublicKeyResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
-import org.eclipse.edc.spi.result.Result;
 
 /**
- * Resolves a public key contained in a DID document associated with a DID.
+ * Specialized version of {@link PublicKeyResolver} which can be injected in the runtime
+ * as dependency, and specific to public keys resolvable with did urls.
  */
 @ExtensionPoint
-public interface DidPublicKeyResolver {
-
-    /**
-     * Resolves the public key.
-     */
-    Result<PublicKeyWrapper> resolvePublicKey(String did);
-
+public interface DidPublicKeyResolver extends PublicKeyResolver {
 }

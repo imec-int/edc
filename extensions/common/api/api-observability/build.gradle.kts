@@ -20,7 +20,7 @@ plugins {
 dependencies {
     api(project(":spi:common:core-spi"))
     api(project(":spi:common:web-spi"))
-    implementation(project(":core:common:util"))
+    implementation(project(":core:common:lib:util-lib"))
     implementation(libs.jakarta.rsApi)
 
     testImplementation(project(":core:common:junit"))
@@ -30,7 +30,7 @@ dependencies {
 
 edcBuild {
     swagger {
-        apiGroup.set("management-api")
+        apiGroup.set("observability-api")
     }
 }
 

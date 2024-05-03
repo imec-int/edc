@@ -16,9 +16,9 @@ package org.eclipse.edc.iam.did.web.resolution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.Request;
+import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.document.DidDocument;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolver;
-import org.eclipse.edc.spi.http.EdcHttpClient;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.jetbrains.annotations.NotNull;
@@ -73,7 +73,7 @@ public class WebDidResolver implements DidResolver {
                 if (body == null) {
                     return Result.failure("DID response contained an empty body: " + didKey);
                 }
-                DidDocument didDocument = mapper.readValue(body.string(), DidDocument.class);
+                var didDocument = mapper.readValue(body.string(), DidDocument.class);
                 return Result.success(didDocument);
             }
         } catch (IOException e) {

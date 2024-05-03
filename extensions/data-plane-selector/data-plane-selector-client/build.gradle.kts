@@ -18,7 +18,7 @@ plugins {
 dependencies {
     api(project(":spi:data-plane-selector:data-plane-selector-spi"))
     api(project(":spi:common:http-spi"))
-    implementation(project(":core:common:util"))
+    implementation(project(":core:common:lib:util-lib"))
     implementation(project(":spi:common:transform-spi"))
     implementation(project(":extensions:common:json-ld"))
 
@@ -27,8 +27,10 @@ dependencies {
     testImplementation(project(":extensions:common:api:api-core"))
 
     testImplementation(project(":core:common:junit"))
-    testImplementation(project(":core:common:transform-core"))
-    testImplementation(project(":core:common:jersey-providers"))
+    testImplementation(project(":core:common:lib:transform-lib"))
+    testImplementation(project(":extensions:common:http:lib:jersey-providers-lib"))
+
+    testImplementation(testFixtures(project(":core:common:lib:http-lib")))
     testImplementation(testFixtures(project(":extensions:common:http:jersey-core")))
 }
 

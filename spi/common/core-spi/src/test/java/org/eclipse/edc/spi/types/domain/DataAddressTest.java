@@ -14,7 +14,7 @@
 
 package org.eclipse.edc.spi.types.domain;
 
-import org.eclipse.edc.spi.types.TypeManager;
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -23,13 +23,13 @@ import java.io.StringWriter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.eclipse.edc.spi.CoreConstants.EDC_NAMESPACE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 
 class DataAddressTest {
 
     @Test
     void verifyDeserialization() throws IOException {
-        var mapper = new TypeManager().getMapper();
+        var mapper = new JacksonTypeManager().getMapper();
 
         var dataAddress = DataAddress.Builder.newInstance()
                 .type("test")

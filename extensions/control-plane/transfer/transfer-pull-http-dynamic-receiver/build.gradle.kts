@@ -20,14 +20,17 @@ dependencies {
     api(project(":spi:common:core-spi"))
     api(project(":spi:control-plane:transfer-spi"))
 
-    implementation(project(":core:common:util"))
+    implementation(project(":core:common:lib:util-lib"))
 
     implementation(libs.okhttp)
     implementation(libs.failsafe.core)
 
+    testImplementation(project(":spi:common:data-address:data-address-http-data-spi"))
+    testImplementation(project(":core:common:lib:json-lib"))
+    testImplementation(testFixtures(project(":core:common:lib:http-lib")))
     testImplementation(libs.mockserver.netty)
     testImplementation(libs.mockserver.client)
-    testImplementation(project(":core:common:junit"))
+
 
 
 }

@@ -5,12 +5,14 @@ plugins {
 
 dependencies {
     api(project(":spi:common:identity-did-spi"))
-    implementation(project(":extensions:common:iam:decentralized-identity:identity-did-crypto"))
+    implementation(project(":spi:common:keys-spi"))
+    implementation(project(":core:common:lib:util-lib"))
+    implementation(project(":core:common:lib:keys-lib"))
 
-    implementation(libs.jakarta.rsApi)
+    implementation(libs.bouncyCastle.bcpkixJdk18on)
 
-    testImplementation(testFixtures(project(":extensions:common:iam:decentralized-identity:identity-did-test")))
-    testImplementation(project(":core:common:junit"))
+    testImplementation(project(":tests:junit-base"));
+
 }
 
 

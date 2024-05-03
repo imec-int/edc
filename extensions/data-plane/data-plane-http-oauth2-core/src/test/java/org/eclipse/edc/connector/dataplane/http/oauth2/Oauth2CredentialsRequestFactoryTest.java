@@ -20,16 +20,15 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.edc.connector.dataplane.http.spi.HttpDataAddress;
 import org.eclipse.edc.iam.oauth2.spi.client.PrivateKeyOauth2CredentialsRequest;
 import org.eclipse.edc.iam.oauth2.spi.client.SharedSecretOauth2CredentialsRequest;
+import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.spi.security.Vault;
-import org.eclipse.edc.spi.types.domain.HttpDataAddress;
 import org.junit.jupiter.api.Test;
 
-import java.security.PrivateKey;
 import java.sql.Date;
 import java.time.Clock;
 import java.time.Instant;
@@ -97,7 +96,7 @@ class Oauth2CredentialsRequestFactoryTest {
     @Test
     void shouldCreatePrivateKeyRequest_whenPrivateKeyNameIsPresent() throws JOSEException {
         var keyPair = generateKeyPair();
-        when(privateKeyResolver.resolvePrivateKey("pk-test", PrivateKey.class)).thenReturn(keyPair.toPrivateKey());
+        when(privateKeyResolver.resolvePrivateKey("pk-test")).thenReturn(Result.success(keyPair.toPrivateKey()));
 
         var address = defaultAddress()
                 .property(PRIVATE_KEY_NAME, "pk-test")
@@ -131,7 +130,7 @@ class Oauth2CredentialsRequestFactoryTest {
 
     @Test
     void shouldFailIfPrivateKeySecretNotFound() {
-        when(privateKeyResolver.resolvePrivateKey("pk-test", PrivateKey.class)).thenReturn(null);
+        when(privateKeyResolver.resolvePrivateKey("pk-test")).thenReturn(Result.failure("not found"));
 
         var address = defaultAddress()
                 .property(PRIVATE_KEY_NAME, "pk-test")

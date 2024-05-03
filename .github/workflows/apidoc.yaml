@@ -23,16 +23,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        apiGroup: [ 'management-api', 'control-api' ]
+        apiGroup: [ 'public-api', 'management-api', 'control-api' ]
     env:
       rootDir: resources/openapi/yaml/${{ matrix.apiGroup }}
       SWAGGERHUB_API_KEY: ${{ secrets.SWAGGERHUB_TOKEN }}
       SWAGGERHUB_USER: ${{ secrets.SWAGGERHUB_USER }}
       VERSION: ${{ github.event.inputs.version || inputs.version }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-build
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: eclipse-edc/.github/.github/actions/setup-build@main
+      - uses: actions/setup-node@v4
 
       # merge together all api groups
       - name: Generate API Specs
@@ -53,7 +53,7 @@ jobs:
       - name: Create API
         continue-on-error: true
         run: |
-          swaggerhub api:create ${{ env.SWAGGERHUB_USER }}/${{ matrix.apiGroup}} -f ${{ matrix.apiGroup }}.yaml --visibility=public --published=unpublish
+          swaggerhub api:create ${{ env.SWAGGERHUB_USER }}/${{ matrix.apiGroup }} -f ${{ matrix.apiGroup }}.yaml --visibility=public --published=unpublish
 
       # Post snapshots of the API to SwaggerHub as "unpublished", because published APIs cannot be overwritten
       - name: Publish API Specs to SwaggerHub
@@ -63,8 +63,9 @@ jobs:
           
           if [[ $vers != *-SNAPSHOT ]]; then
             echo "no snapshot, will set the API to 'published'";
-            swaggerhub api:update ${{ env.SWAGGERHUB_USER }}/${{ matrix.apiGroup}} -f ${{ matrix.apiGroup }}.yaml --visibility=public --published=publish
+            swaggerhub api:update ${{ env.SWAGGERHUB_USER }}/${{ matrix.apiGroup }} -f ${{ matrix.apiGroup }}.yaml --visibility=public --published=publish
+            swaggerhub api:setdefault ${{ env.SWAGGERHUB_USER }}/${{ matrix.apiGroup }}/$vers
           else
             echo "snapshot, will set the API to 'unpublished'";
-            swaggerhub api:update ${{ env.SWAGGERHUB_USER }}/${{ matrix.apiGroup}} -f ${{ matrix.apiGroup }}.yaml --visibility=public --published=unpublish
+            swaggerhub api:update ${{ env.SWAGGERHUB_USER }}/${{ matrix.apiGroup }} -f ${{ matrix.apiGroup }}.yaml --visibility=public --published=unpublish
           fi

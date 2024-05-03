@@ -15,6 +15,9 @@
 
 package org.eclipse.edc.policy.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -22,30 +25,20 @@ import static java.util.stream.Collectors.joining;
  */
 public class Prohibition extends Rule {
 
+    private final List<Duty> remedies = new ArrayList<>();
+
     @Override
     public <R> R accept(Visitor<R> visitor) {
         return visitor.visitProhibition(this);
     }
 
+    public List<Duty> getRemedies() {
+        return remedies;
+    }
+
     @Override
     public String toString() {
         return "Prohibition constraints: [" + getConstraints().stream().map(Object::toString).collect(joining(",")) + "]";
-    }
-
-    /**
-     * Returns a copy of this prohibition with the specified target.
-     *
-     * @param target the target.
-     * @return a copy with the specified target.
-     */
-    public Prohibition withTarget(String target) {
-        return Builder.newInstance()
-                .assigner(this.assigner)
-                .assignee(this.assignee)
-                .action(this.action)
-                .constraints(this.constraints)
-                .target(target)
-                .build();
     }
 
     public static class Builder extends Rule.Builder<Prohibition, Prohibition.Builder> {
@@ -56,6 +49,16 @@ public class Prohibition extends Rule {
 
         public static Builder newInstance() {
             return new Builder();
+        }
+
+        public Builder remedy(Duty remedy) {
+            rule.remedies.add(remedy);
+            return this;
+        }
+
+        public Builder remedies(List<Duty> remedies) {
+            rule.remedies.addAll(remedies);
+            return this;
         }
 
         public Prohibition build() {

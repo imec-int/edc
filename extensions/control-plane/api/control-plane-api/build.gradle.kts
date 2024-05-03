@@ -20,18 +20,19 @@ plugins {
 dependencies {
 
     api(project(":spi:control-plane:control-plane-spi"))
-    api(project(":spi:control-plane:control-plane-api-client-spi"))
     api(project(":spi:common:web-spi"))
     api(project(":spi:common:auth-spi"))
     implementation(project(":extensions:common:api:control-api-configuration"))
 
     implementation(libs.jakarta.rsApi)
 
+    testImplementation(project(":core:common:connector-core"))
     testImplementation(project(":core:control-plane:control-plane-core"))
     testImplementation(project(":core:data-plane-selector:data-plane-selector-core"))
     testImplementation(project(":extensions:common:http"))
     testImplementation(project(":core:common:junit"))
     testImplementation(project(":extensions:common:auth:auth-tokenbased"))
+    testImplementation(testFixtures(project(":extensions:common:http:jersey-core")))
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)
 }

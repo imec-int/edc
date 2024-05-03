@@ -14,24 +14,20 @@
 
 package org.eclipse.edc.connector.core;
 
+import org.eclipse.edc.boot.system.injection.ObjectFactory;
 import org.eclipse.edc.connector.core.event.EventExecutorServiceContainer;
-import org.eclipse.edc.connector.core.security.DefaultPrivateKeyParseFunction;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
+import org.eclipse.edc.keys.spi.PrivateKeyResolver;
 import org.eclipse.edc.policy.model.PolicyRegistrationTypes;
-import org.eclipse.edc.spi.security.PrivateKeyResolver;
 import org.eclipse.edc.spi.system.ExecutorInstrumentation;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.spi.system.injection.ObjectFactory;
 import org.eclipse.edc.spi.types.TypeManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.security.PrivateKey;
 import java.util.concurrent.Executors;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -40,14 +36,13 @@ class CoreServicesExtensionTest {
     private final TypeManager typeManager = mock(TypeManager.class);
     private CoreServicesExtension extension;
     private ServiceExtensionContext context;
-    private PrivateKeyResolver privateKeyResolverMock;
 
     @BeforeEach
     void setUp(ServiceExtensionContext context, ObjectFactory factory) {
         context.registerService(EventExecutorServiceContainer.class, new EventExecutorServiceContainer(Executors.newSingleThreadExecutor()));
         context.registerService(TypeManager.class, typeManager);
 
-        privateKeyResolverMock = mock(PrivateKeyResolver.class);
+        var privateKeyResolverMock = mock(PrivateKeyResolver.class);
         context.registerService(PrivateKeyResolver.class, privateKeyResolverMock);
 
         context.registerService(ExecutorInstrumentation.class, mock(ExecutorInstrumentation.class));
@@ -63,9 +58,4 @@ class CoreServicesExtensionTest {
         PolicyRegistrationTypes.TYPES.forEach(t -> verify(typeManager).registerTypes(t));
     }
 
-    @Test
-    void verifyDefaultPrivateKeyParserIsRegistered() {
-        extension.initialize(context);
-        verify(privateKeyResolverMock).addParser(eq(PrivateKey.class), any(DefaultPrivateKeyParseFunction.class));
-    }
 }

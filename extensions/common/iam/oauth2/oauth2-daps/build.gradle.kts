@@ -20,9 +20,11 @@ dependencies {
     api(project(":spi:common:core-spi"))
     api(project(":spi:common:oauth2-spi"))
 
+    testImplementation(project(":core:common:connector-core"))
     testImplementation(project(":extensions:common:vault:vault-filesystem"))
     testImplementation(project(":extensions:common:iam:oauth2:oauth2-core"))
     testImplementation(project(":core:common:junit"))
+    testImplementation(libs.testcontainers.junit)
 }
 
 

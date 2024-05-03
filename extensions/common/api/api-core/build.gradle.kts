@@ -18,14 +18,13 @@ plugins {
 
 dependencies {
     api(project(":spi:common:auth-spi"))
-    api(project(":spi:common:aggregate-service-spi"))
     api(project(":spi:common:transform-spi"))
     api(project(":spi:common:web-spi"))
     api(project(":spi:common:json-ld-spi"))
 
-    implementation(project(":core:common:transform-core"))
-    implementation(project(":core:common:util"))
-    implementation(project(":core:common:validator-core"))
+    implementation(project(":core:common:lib:transform-lib"))
+    implementation(project(":core:common:lib:util-lib"))
+    implementation(project(":core:common:lib:validator-lib"))
     implementation(libs.jakarta.rsApi)
     implementation(libs.swagger.annotations.jakarta)
 
@@ -33,7 +32,8 @@ dependencies {
     testImplementation(libs.jersey.server)
 
     testImplementation(project(":core:common:junit"))
-    testImplementation(project(":extensions:common:json-ld"))
+    testImplementation(project(":core:common:lib:query-lib"))
+    testImplementation(project(":core:common:lib:json-ld-lib"))
 }
 
 

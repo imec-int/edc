@@ -21,6 +21,10 @@ dependencies {
     api(project(":spi:common:core-spi"))
     api(project(":spi:common:transaction-spi"))
     implementation(project(":spi:common:transaction-datasource-spi"))
+
+    testImplementation(project(":tests:junit-base"));
+
+    testImplementation(testFixtures(project(":extensions:common:sql:sql-core")))
 }
 
 

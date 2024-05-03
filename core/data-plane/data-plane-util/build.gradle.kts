@@ -19,11 +19,12 @@ plugins {
 dependencies {
     api(project(":spi:data-plane:data-plane-spi"))
 
-    implementation(project(":core:common:util"))
+    implementation(project(":core:common:lib:util-lib"))
 
     implementation(libs.opentelemetry.instrumentation.annotations)
 
-    testImplementation(project(":core:common:junit"))
+    testImplementation(project(":tests:junit-base"));
+
 }
 
 

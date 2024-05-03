@@ -15,7 +15,7 @@
 package org.eclipse.edc.protocol.dsp.catalog.transform.to;
 
 import jakarta.json.JsonObject;
-import org.eclipse.edc.catalog.spi.CatalogRequestMessage;
+import org.eclipse.edc.connector.controlplane.catalog.spi.CatalogRequestMessage;
 import org.eclipse.edc.jsonld.spi.transformer.AbstractJsonLdTransformer;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.transform.spi.TransformerContext;
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-import static org.eclipse.edc.protocol.dsp.type.DspCatalogPropertyAndTypeNames.DSPACE_PROPERTY_FILTER;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspCatalogPropertyAndTypeNames.DSPACE_PROPERTY_FILTER;
 
 /**
  * Transforms a {@link JsonObject} in JSON-LD expanded form to a {@link CatalogRequestMessage}.

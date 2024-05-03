@@ -16,19 +16,16 @@ package org.eclipse.edc.connector.dataplane.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.edc.connector.dataplane.selector.spi.client.DataPlaneSelectorClient;
+import org.eclipse.edc.connector.dataplane.selector.spi.client.DataPlaneClient;
 import org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance;
-import org.eclipse.edc.connector.dataplane.spi.client.DataPlaneClient;
 import org.eclipse.edc.connector.dataplane.spi.response.TransferErrorResponse;
-import org.eclipse.edc.spi.http.EdcHttpClient;
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.response.ResponseStatus;
-import org.eclipse.edc.spi.types.TypeManager;
 import org.eclipse.edc.spi.types.domain.DataAddress;
-import org.eclipse.edc.spi.types.domain.transfer.DataFlowRequest;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowStartMessage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
@@ -37,105 +34,71 @@ import org.mockserver.model.HttpStatusCode;
 import org.mockserver.model.MediaType;
 import org.mockserver.verify.VerificationTimes;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
-import static org.eclipse.edc.junit.testfixtures.TestUtils.getFreePort;
-import static org.eclipse.edc.junit.testfixtures.TestUtils.testHttpClient;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.eclipse.edc.http.client.testfixtures.HttpTestUtils.testHttpClient;
+import static org.eclipse.edc.junit.assertions.AbstractResultAssert.assertThat;
+import static org.eclipse.edc.util.io.Ports.getFreePort;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.matchers.Times.once;
 import static org.mockserver.model.HttpResponse.response;
+import static org.mockserver.model.HttpStatusCode.CONFLICT_409;
+import static org.mockserver.model.HttpStatusCode.NO_CONTENT_204;
 import static org.mockserver.stop.Stop.stopQuietly;
 
 class RemoteDataPlaneClientTest {
 
-    private static final ObjectMapper MAPPER = new TypeManager().getMapper();
+    private static final ObjectMapper MAPPER = new JacksonTypeManager().getMapper();
 
     private static final int DATA_PLANE_API_PORT = getFreePort();
     private static final String DATA_PLANE_PATH = "/transfer";
     private static final String DATA_PLANE_API_URI = "http://localhost:" + DATA_PLANE_API_PORT + DATA_PLANE_PATH;
-
-    /**
-     * Data plane mock server.
-     */
-    private static ClientAndServer dataPlaneClientAndServer;
-    private DataPlaneSelectorClient selectorClientMock;
-    private DataPlaneClient dataPlaneClient;
+    private static ClientAndServer dataPlane;
+    private final DataPlaneInstance instance = DataPlaneInstance.Builder.newInstance().url(DATA_PLANE_API_URI).build();
+    private final DataPlaneClient dataPlaneClient = new RemoteDataPlaneClient(testHttpClient(), MAPPER, instance);
 
     @BeforeAll
     public static void setUp() {
-        dataPlaneClientAndServer = startClientAndServer(DATA_PLANE_API_PORT);
+        dataPlane = startClientAndServer(DATA_PLANE_API_PORT);
     }
 
     @AfterAll
     public static void tearDown() {
-        stopQuietly(dataPlaneClientAndServer);
+        stopQuietly(dataPlane);
     }
 
-    /**
-     * Reset mock server internal state after every test.
-     */
+    private static HttpResponse withResponse(String errorMsg) throws JsonProcessingException {
+        return response().withStatusCode(HttpStatusCode.BAD_REQUEST_400.code())
+                .withBody(MAPPER.writeValueAsString(new TransferErrorResponse(List.of(errorMsg))), MediaType.APPLICATION_JSON);
+    }
+
+    private static DataFlowStartMessage createDataFlowRequest() {
+        return DataFlowStartMessage.Builder.newInstance()
+                .id("123")
+                .processId("456")
+                .sourceDataAddress(DataAddress.Builder.newInstance().type("test").build())
+                .destinationDataAddress(DataAddress.Builder.newInstance().type("test").build())
+                .build();
+    }
+
     @AfterEach
     public void resetMockServer() {
-        dataPlaneClientAndServer.reset();
-    }
-
-    @BeforeEach
-    public void init() {
-        selectorClientMock = mock(DataPlaneSelectorClient.class);
-        var selectionStrategy = "test";
-        dataPlaneClient = new RemoteDataPlaneClient(testHttpClient(), selectorClientMock, selectionStrategy, MAPPER);
+        dataPlane.reset();
     }
 
     @Test
-    void verifyCtor() {
-        assertThatNullPointerException().isThrownBy(() -> new RemoteDataPlaneClient(null, selectorClientMock, "test", MAPPER))
-                .withMessageContaining("Http client");
-        assertThatNullPointerException().isThrownBy(() -> new RemoteDataPlaneClient(mock(EdcHttpClient.class), null, "test", MAPPER))
-                .withMessageContaining("Data plane selector client");
-        assertThatNullPointerException().isThrownBy(() -> new RemoteDataPlaneClient(mock(EdcHttpClient.class), selectorClientMock, null, MAPPER))
-                .withMessageContaining("Selector strategy");
-        assertThatNullPointerException().isThrownBy(() -> new RemoteDataPlaneClient(mock(EdcHttpClient.class), selectorClientMock, "test", null))
-                .withMessageContaining("Object mapper");
-    }
-
-    @Test
-    void verifyReturnsFatalErrorIfNoDataPlaneInstanceFound() {
-        var flowRequest = createDataFlowRequest();
-        when(selectorClientMock.find(any(), any(), any())).thenReturn(null);
-
-        var result = dataPlaneClient.transfer(flowRequest);
-
-        assertThat(result.failed()).isTrue();
-        assertThat(result.getFailure().status()).isEqualTo(ResponseStatus.FATAL_ERROR);
-        assertThat(result.getFailureMessages())
-                .anySatisfy(s -> assertThat(s).contains("Failed to find data plane instance supporting request: " + flowRequest.getId()));
-    }
-
-    @Test
-    void verifyReturnFatalErrorIfReceiveResponseWithNullBody() throws MalformedURLException, JsonProcessingException {
+    void transfer_verifyReturnFatalErrorIfReceiveResponseWithNullBody() throws JsonProcessingException {
         var flowRequest = createDataFlowRequest();
 
-        // mock data plane selector
-        var instance = mock(DataPlaneInstance.class);
-        when(instance.getUrl()).thenReturn(new URL(DATA_PLANE_API_URI));
-        when(selectorClientMock.find(any(), any(), any())).thenReturn(instance);
-
-        // config data plane mock server
         var httpRequest = new HttpRequest().withPath(DATA_PLANE_PATH).withBody(MAPPER.writeValueAsString(flowRequest));
-        dataPlaneClientAndServer.when(httpRequest, once()).respond(response().withStatusCode(HttpStatusCode.BAD_REQUEST_400.code()));
+        dataPlane.when(httpRequest, once()).respond(response().withStatusCode(HttpStatusCode.BAD_REQUEST_400.code()));
 
-        var result = dataPlaneClient.transfer(flowRequest);
+        var result = dataPlaneClient.start(flowRequest);
 
-        dataPlaneClientAndServer.verify(httpRequest, VerificationTimes.once());
+        dataPlane.verify(httpRequest, VerificationTimes.once());
 
         assertThat(result.failed()).isTrue();
         assertThat(result.getFailure().status()).isEqualTo(ResponseStatus.FATAL_ERROR);
@@ -146,22 +109,16 @@ class RemoteDataPlaneClientTest {
     }
 
     @Test
-    void verifyReturnFatalErrorIfReceiveErrrorInResponse() throws MalformedURLException, JsonProcessingException {
+    void transfer_verifyReturnFatalErrorIfReceiveErrorInResponse() throws JsonProcessingException {
         var flowRequest = createDataFlowRequest();
 
-        // mock data plane selector
-        var instance = mock(DataPlaneInstance.class);
-        when(instance.getUrl()).thenReturn(new URL(DATA_PLANE_API_URI));
-        when(selectorClientMock.find(any(), any(), any())).thenReturn(instance);
-
-        // config data plane mock server
         var httpRequest = new HttpRequest().withPath(DATA_PLANE_PATH).withBody(MAPPER.writeValueAsString(flowRequest));
         var errorMsg = UUID.randomUUID().toString();
-        dataPlaneClientAndServer.when(httpRequest, once()).respond(withResponse(errorMsg));
+        dataPlane.when(httpRequest, once()).respond(withResponse(errorMsg));
 
-        var result = dataPlaneClient.transfer(flowRequest);
+        var result = dataPlaneClient.start(flowRequest);
 
-        dataPlaneClientAndServer.verify(httpRequest, VerificationTimes.once());
+        dataPlane.verify(httpRequest, VerificationTimes.once());
 
         assertThat(result.failed()).isTrue();
         assertThat(result.getFailure().status()).isEqualTo(ResponseStatus.FATAL_ERROR);
@@ -172,37 +129,37 @@ class RemoteDataPlaneClientTest {
     }
 
     @Test
-    void verifyTransferSucess() throws JsonProcessingException, MalformedURLException {
+    void transfer_verifyTransferSuccess() throws JsonProcessingException {
         var flowRequest = createDataFlowRequest();
 
-        // mock data plane selector
-        var instance = mock(DataPlaneInstance.class);
-        when(instance.getUrl()).thenReturn(new URL(DATA_PLANE_API_URI));
-        when(selectorClientMock.find(any(), any(), any())).thenReturn(instance);
-
-        // config data plane mock server
         var httpRequest = new HttpRequest().withPath(DATA_PLANE_PATH).withBody(MAPPER.writeValueAsString(flowRequest));
-        dataPlaneClientAndServer.when(httpRequest, once()).respond(response().withStatusCode(HttpStatusCode.OK_200.code()));
+        dataPlane.when(httpRequest, once()).respond(response().withStatusCode(HttpStatusCode.OK_200.code()));
 
-        var result = dataPlaneClient.transfer(flowRequest);
+        var result = dataPlaneClient.start(flowRequest);
 
-        dataPlaneClientAndServer.verify(httpRequest, VerificationTimes.once());
+        dataPlane.verify(httpRequest, VerificationTimes.once());
 
         assertThat(result.succeeded()).isTrue();
     }
 
-    private static HttpResponse withResponse(String errorMsg) throws JsonProcessingException {
-        return response().withStatusCode(HttpStatusCode.BAD_REQUEST_400.code())
-                .withBody(MAPPER.writeValueAsString(new TransferErrorResponse(List.of(errorMsg))), MediaType.APPLICATION_JSON);
+    @Test
+    void terminate_shouldCallTerminateOnAllTheAvailableDataPlanes() {
+        var httpRequest = new HttpRequest().withMethod("DELETE").withPath(DATA_PLANE_PATH + "/processId");
+        dataPlane.when(httpRequest, once()).respond(response().withStatusCode(NO_CONTENT_204.code()));
+
+        var result = dataPlaneClient.terminate("processId");
+
+        assertThat(result).isSucceeded();
+        dataPlane.verify(httpRequest, VerificationTimes.once());
     }
 
-    private static DataFlowRequest createDataFlowRequest() {
-        return DataFlowRequest.Builder.newInstance()
-                .trackable(true)
-                .id("123")
-                .processId("456")
-                .sourceDataAddress(DataAddress.Builder.newInstance().type("test").build())
-                .destinationDataAddress(DataAddress.Builder.newInstance().type("test").build())
-                .build();
+    @Test
+    void terminate_shouldFail_whenConflictResponse() {
+        var httpRequest = new HttpRequest().withMethod("DELETE").withPath(DATA_PLANE_PATH + "/processId");
+        dataPlane.when(httpRequest, once()).respond(response().withStatusCode(CONFLICT_409.code()));
+
+        var result = dataPlaneClient.terminate("processId");
+
+        assertThat(result).isFailed();
     }
 }

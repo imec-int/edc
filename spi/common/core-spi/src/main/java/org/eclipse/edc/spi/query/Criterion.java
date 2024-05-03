@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static java.lang.String.format;
-import static org.eclipse.edc.spi.CoreConstants.EDC_NAMESPACE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 
 /**
  * This class can be used to form select expressions e.g. in SQL statements. It is a way to express those statements in
@@ -74,6 +74,7 @@ public class Criterion {
         return new Criterion(operandLeft, operator, getOperandRight());
     }
 
+    @Deprecated(since = "0.5.0")
     public Criterion withLeftOperand(Function<Object, Object> function) {
         return new Criterion(function.apply(operandLeft), operator, getOperandRight());
     }

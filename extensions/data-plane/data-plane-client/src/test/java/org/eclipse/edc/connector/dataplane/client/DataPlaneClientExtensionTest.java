@@ -15,13 +15,15 @@
 package org.eclipse.edc.connector.dataplane.client;
 
 import dev.failsafe.RetryPolicy;
-import org.eclipse.edc.connector.dataplane.selector.spi.client.DataPlaneSelectorClient;
+import org.eclipse.edc.boot.system.injection.ObjectFactory;
+import org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance;
 import org.eclipse.edc.connector.dataplane.spi.manager.DataPlaneManager;
+import org.eclipse.edc.http.spi.EdcHttpClient;
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.junit.extensions.DependencyInjectionExtension;
-import org.eclipse.edc.spi.http.EdcHttpClient;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.spi.system.injection.ObjectFactory;
 import org.eclipse.edc.spi.types.TypeManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -31,14 +33,18 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(DependencyInjectionExtension.class)
 class DataPlaneClientExtensionTest {
 
+    @BeforeEach
+    void setUp(ServiceExtensionContext context) {
+        context.registerService(TypeManager.class, new JacksonTypeManager());
+    }
+
     @Test
     void verifyReturnEmbeddedClient(ServiceExtensionContext context, ObjectFactory factory) {
         context.registerService(DataPlaneManager.class, mock(DataPlaneManager.class));
-        context.registerService(TypeManager.class, new TypeManager());
 
         var extension = factory.constructInstance(DataPlaneClientExtension.class);
 
-        var client = extension.dataPlaneClient(context);
+        var client = extension.dataPlaneClientFactory(context).createClient(createDataPlaneInstance());
 
         assertThat(client).isInstanceOf(EmbeddedDataPlaneClient.class);
     }
@@ -48,13 +54,15 @@ class DataPlaneClientExtensionTest {
         context.registerService(DataPlaneManager.class, null);
         context.registerService(EdcHttpClient.class, mock(EdcHttpClient.class));
         context.registerService(RetryPolicy.class, mock(RetryPolicy.class));
-        context.registerService(DataPlaneSelectorClient.class, mock(DataPlaneSelectorClient.class));
-        context.registerService(TypeManager.class, new TypeManager());
 
         var extension = factory.constructInstance(DataPlaneClientExtension.class);
 
-        var client = extension.dataPlaneClient(context);
+        var client = extension.dataPlaneClientFactory(context).createClient(createDataPlaneInstance());
 
         assertThat(client).isInstanceOf(RemoteDataPlaneClient.class);
+    }
+
+    private DataPlaneInstance createDataPlaneInstance() {
+        return DataPlaneInstance.Builder.newInstance().url("http://any").build();
     }
 }

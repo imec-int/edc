@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Mercedes-Benz Tech Innovation GmbH - Initial API and Implementation
+ *       Materna Information & Communications SE - Refactoring
  *
  */
 
@@ -17,6 +18,7 @@ package org.eclipse.edc.vault.hashicorp;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.security.Vault;
+import org.eclipse.edc.vault.hashicorp.client.HashicorpVaultClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +41,12 @@ public class HashicorpVault implements Vault {
     public @Nullable String resolveSecret(String key) {
         var result = hashicorpVaultClient.getSecretValue(key);
 
-        return result.succeeded() ? result.getContent() : null;
+        if (result.failed()) {
+            monitor.debug("Failed to resolve secret '%s': %s".formatted(key, result.getFailureMessages()));
+            return null;
+        }
+
+        return result.getContent();
     }
 
     @Override

@@ -15,15 +15,15 @@
 package org.eclipse.edc.connector.api.management.configuration;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.eclipse.edc.connector.contract.spi.types.agreement.ContractAgreement;
-import org.eclipse.edc.connector.contract.spi.types.negotiation.ContractNegotiation;
+import org.eclipse.edc.connector.controlplane.contract.spi.types.agreement.ContractAgreement;
+import org.eclipse.edc.connector.controlplane.contract.spi.types.negotiation.ContractNegotiation;
 import org.eclipse.edc.spi.types.domain.DataAddress;
 import org.eclipse.edc.spi.types.domain.callback.CallbackAddress;
 
 import java.util.List;
 import java.util.Set;
 
-import static org.eclipse.edc.connector.contract.spi.types.negotiation.ContractNegotiation.CONTRACT_NEGOTIATION_TYPE;
+import static org.eclipse.edc.connector.controlplane.contract.spi.types.negotiation.ContractNegotiation.CONTRACT_NEGOTIATION_TYPE;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 
@@ -46,7 +46,7 @@ public interface ManagementApiSchema {
     ) {
         public static final String CONTRACT_AGREEMENT_EXAMPLE = """
                 {
-                    "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+                    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
                     "@type": "https://w3id.org/edc/v0.0.1/ns/ContractAgreement",
                     "@id": "negotiation-id",
                     "providerId": "provider-id",
@@ -88,13 +88,16 @@ public interface ManagementApiSchema {
     ) {
         public static final String DATA_ADDRESS_EXAMPLE = """
                 {
-                    "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+                    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
                     "@type": "https://w3id.org/edc/v0.0.1/ns/DataAddress",
                     "type": "HttpData",
                     "baseUrl": "http://example.com"
                 }
                 """;
     }
+
+    @Schema(name = "Properties", additionalProperties = Schema.AdditionalPropertiesValue.TRUE)
+    record FreeFormPropertiesSchema() {}
 
     @Schema(name = "Policy", description = "ODRL policy", example = PolicySchema.POLICY_EXAMPLE)
     record PolicySchema() {
@@ -137,7 +140,7 @@ public interface ManagementApiSchema {
     ) {
         public static final String CONTRACT_NEGOTIATION_EXAMPLE = """
                 {
-                    "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+                    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
                     "@type": "https://w3id.org/edc/v0.0.1/ns/ContractNegotiation",
                     "@id": "negotiation-id",
                     "type": "PROVIDER",

@@ -19,16 +19,16 @@ import io.netty.handler.codec.http.HttpMethod;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
 import org.eclipse.edc.connector.dataplane.http.params.HttpRequestFactory;
+import org.eclipse.edc.connector.dataplane.http.spi.HttpDataAddress;
 import org.eclipse.edc.connector.dataplane.http.spi.HttpRequestParams;
 import org.eclipse.edc.connector.dataplane.http.spi.HttpRequestParamsProvider;
-import org.eclipse.edc.connector.dataplane.http.testfixtures.HttpTestFixtures;
+import org.eclipse.edc.connector.dataplane.http.testfixtures.TestFunctions;
 import org.eclipse.edc.connector.dataplane.spi.pipeline.InputStreamDataSource;
+import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.spi.EdcException;
-import org.eclipse.edc.spi.http.EdcHttpClient;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.types.domain.DataAddress;
-import org.eclipse.edc.spi.types.domain.HttpDataAddress;
-import org.eclipse.edc.spi.types.domain.transfer.DataFlowRequest;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowStartMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,19 +44,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.edc.connector.dataplane.http.testfixtures.HttpTestFixtures.createHttpResponse;
-import static org.eclipse.edc.spi.types.domain.HttpDataAddress.HTTP_DATA;
+import static org.eclipse.edc.connector.dataplane.http.testfixtures.TestFunctions.createHttpResponse;
+import static org.eclipse.edc.dataaddress.httpdata.spi.HttpDataAddressSchema.HTTP_DATA_TYPE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class HttpDataSinkFactoryTest {
 
-    private final EdcHttpClient httpClient = mock(EdcHttpClient.class);
-    private final Monitor monitor = mock(Monitor.class);
+    private final EdcHttpClient httpClient = mock();
+    private final Monitor monitor = mock();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final HttpRequestParamsProvider provider = mock(HttpRequestParamsProvider.class);
-    private final HttpRequestFactory requestFactory = mock(HttpRequestFactory.class);
+    private final HttpRequestParamsProvider provider = mock();
+    private final HttpRequestFactory requestFactory = mock();
 
     private HttpDataSinkFactory factory;
 
@@ -67,12 +67,12 @@ class HttpDataSinkFactoryTest {
 
     @Test
     void verifyCanHandle() {
-        assertThat(factory.canHandle(HttpTestFixtures.createRequest(HTTP_DATA).build())).isTrue();
+        assertThat(factory.canHandle(TestFunctions.createRequest(HTTP_DATA_TYPE).build())).isTrue();
     }
 
     @Test
     void verifyCannotHandle() {
-        assertThat(factory.canHandle(HttpTestFixtures.createRequest("dummy").build())).isFalse();
+        assertThat(factory.canHandle(TestFunctions.createRequest("dummy").build())).isFalse();
     }
 
     @Test
@@ -139,8 +139,8 @@ class HttpDataSinkFactoryTest {
                 .satisfies(result -> assertThat(result.succeeded()).isTrue());
     }
 
-    private DataFlowRequest createRequest(DataAddress destination) {
-        return DataFlowRequest.Builder.newInstance()
+    private DataFlowStartMessage createRequest(DataAddress destination) {
+        return DataFlowStartMessage.Builder.newInstance()
                 .id(UUID.randomUUID().toString())
                 .processId(UUID.randomUUID().toString())
                 .sourceDataAddress(DataAddress.Builder.newInstance().type("test-type").build())

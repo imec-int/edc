@@ -20,7 +20,7 @@ import org.eclipse.edc.connector.dataplane.http.spi.HttpRequestParams;
 import org.eclipse.edc.connector.dataplane.spi.pipeline.DataSource;
 import org.eclipse.edc.connector.dataplane.spi.pipeline.StreamResult;
 import org.eclipse.edc.connector.dataplane.util.sink.ParallelSink;
-import org.eclipse.edc.spi.http.EdcHttpClient;
+import org.eclipse.edc.http.spi.EdcHttpClient;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,24 +31,22 @@ import static java.lang.String.format;
  * Writes data in a streaming fashion to an HTTP endpoint.
  */
 public class HttpDataSink extends ParallelSink {
-    private static final StreamResult<Void> ERROR_WRITING_DATA = StreamResult.error("Error writing data");
+    private static final StreamResult<Object> ERROR_WRITING_DATA = StreamResult.error("Error writing data");
 
     private HttpRequestParams params;
     private EdcHttpClient httpClient;
     private HttpRequestFactory requestFactory;
 
     @Override
-    protected StreamResult<Void> transferParts(List<DataSource.Part> parts) {
+    protected StreamResult<Object> transferParts(List<DataSource.Part> parts) {
         for (var part : parts) {
-            var request = requestFactory.toRequest(params, part::openStream);
+            var request = requestFactory.toRequest(params, part);
             try (var response = httpClient.execute(request)) {
                 if (!response.isSuccessful()) {
                     monitor.severe(format("Error {%s: %s} received writing HTTP data %s to endpoint %s for request: %s",
                             response.code(), response.message(), part.name(), request.url().url(), request));
                     return ERROR_WRITING_DATA;
                 }
-
-                return StreamResult.success();
             } catch (Exception e) {
                 monitor.severe(format("Error writing HTTP data %s to endpoint %s for request: %s", part.name(), request.url().url(), request), e);
                 return ERROR_WRITING_DATA;

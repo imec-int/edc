@@ -14,14 +14,12 @@
 
 package org.eclipse.edc.sql.translation;
 
-import org.eclipse.edc.spi.query.Criterion;
 import org.eclipse.edc.spi.query.QuerySpec;
 import org.eclipse.edc.spi.query.SortOrder;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -41,33 +39,52 @@ public class SqlQueryStatement {
     private final String selectStatement;
     private final List<String> whereClauses = new ArrayList<>();
     private final List<Object> parameters = new ArrayList<>();
-    private boolean fromQuerySpec = false;
-
+    private final int limit;
+    private final int offset;
+    private CriterionToWhereClauseConverter criterionToWhereConditionConverter;
+    private SortFieldConverter sortFieldConverter;
     private String orderByClause = "";
-    private int limit;
-    private int offset;
 
     /**
-     * Initializes this SQL Query Statement with a SELECT clause, a {@link QuerySpec} and a translation mapping.
+     * Initializes this SQL Query Statement.
      *
-     * @param selectStatement The SELECT clause, e.g. {@code SELECT * FROM your_table}
-     * @param query           a {@link QuerySpec} that contains a query in the canonical format
-     * @param rootModel       A {@link TranslationMapping} that enables mapping from canonical to the SQL-specific
-     *                        model/format
+     * @param selectStatement    The SELECT clause, e.g. {@code SELECT * FROM your_table}
+     * @param query              a {@link QuerySpec} that contains a query in the canonical format
+     * @param rootModel          A {@link TranslationMapping} that enables mapping from canonical to the SQL-specific
+     *                           model/format
+     * @param operatorTranslator the {@link SqlOperatorTranslator} instance.
      */
-    public SqlQueryStatement(String selectStatement, QuerySpec query, TranslationMapping rootModel) {
-        this(selectStatement);
-        fromQuerySpec = true;
-        initialize(query, rootModel);
+    public SqlQueryStatement(String selectStatement, QuerySpec query, TranslationMapping rootModel, SqlOperatorTranslator operatorTranslator) {
+        this(selectStatement, query, rootModel, new CriterionToWhereClauseConverterImpl(rootModel, operatorTranslator));
     }
 
     /**
-     * Initializes this SQL Query Statement with a SELECT clause
+     * Initializes this SQL Query Statement with a SELECT clause, a {@link QuerySpec}, a translation mapping and a criterion converter
+     *
+     * @param selectStatement                    The SELECT clause, e.g. {@code SELECT * FROM your_table}
+     * @param query                              a {@link QuerySpec} that contains a query in the canonical format
+     * @param rootModel                          A {@link TranslationMapping} that enables mapping from canonical to the
+     *                                           SQL-specific model/format
+     * @param criterionToWhereClauseConverter Converts criterion to where condition clauses
+     */
+    public SqlQueryStatement(String selectStatement, QuerySpec query, TranslationMapping rootModel, CriterionToWhereClauseConverter criterionToWhereClauseConverter) {
+        this(selectStatement, query.getLimit(), query.getOffset());
+        this.criterionToWhereConditionConverter = criterionToWhereClauseConverter;
+        this.sortFieldConverter = new SortFieldConverterImpl(rootModel);
+        initialize(query);
+    }
+
+    /**
+     * Initializes this SQL Query Statement with a SELECT clause, LIMIT and OFFSET values.
      *
      * @param selectStatement The SELECT clause, e.g. {@code SELECT * FROM your_table}
+     * @param limit           the limit value.
+     * @param offset          the offset value.
      */
-    public SqlQueryStatement(String selectStatement) {
+    public SqlQueryStatement(String selectStatement, int limit, int offset) {
         this.selectStatement = selectStatement;
+        this.limit = limit;
+        this.offset = offset;
     }
 
     /**
@@ -93,18 +110,31 @@ public class SqlQueryStatement {
      */
     public Object[] getParameters() {
         var params = new ArrayList<>(parameters);
-        if (fromQuerySpec) {
-            params.add(limit);
-            params.add(offset);
-        }
+        params.add(limit);
+        params.add(offset);
         return params.toArray(Object[]::new);
+    }
+
+    /**
+     * Add where clause with related parameters. If it contains multiple clauses better wrap it with parenthesis
+     *
+     * @param clause     the SQL where clause.
+     * @param parameters the parameters.
+     * @return self.
+     */
+    public SqlQueryStatement addWhereClause(String clause, Object... parameters) {
+        whereClauses.add(clause);
+        Collections.addAll(this.parameters, parameters);
+        return this;
     }
 
     /**
      * Add where clause. If it contains multiple clauses better wrap it with parenthesis
      *
      * @param clause the SQL where clause.
+     * @deprecated please use {@link #addWhereClause(String, Object...)}
      */
+    @Deprecated(since = "0.3.1")
     public void addWhereClause(String clause) {
         whereClauses.add(clause);
     }
@@ -113,57 +143,35 @@ public class SqlQueryStatement {
      * Add parameter.
      *
      * @param parameter the parameter.
+     * @deprecated please use {@link #addWhereClause(String, Object...)}
      */
+    @Deprecated(since = "0.3.1")
     public void addParameter(Object parameter) {
         parameters.add(parameter);
     }
 
-    private void initialize(QuerySpec query, TranslationMapping rootModel) {
-        whereClauses.clear();
-        parameters.clear();
-
+    private void initialize(QuerySpec query) {
         query.getFilterExpression().stream()
-                .map(criterion -> parseExpression(criterion, rootModel))
-                .forEach(conditionExpression -> {
-                    whereClauses.add(conditionExpression.toSql());
-
-                    var params = conditionExpression.toStatementParameter().skip(1).toList();
-                    parameters.addAll(params);
+                .map(criterion -> criterionToWhereConditionConverter.convert(criterion))
+                .forEach(whereClause -> {
+                    whereClauses.add(whereClause.sql());
+                    parameters.addAll(whereClause.parameters());
                 });
 
-        limit = query.getLimit();
-        offset = query.getOffset();
-
-        orderByClause = parseSortField(query, rootModel);
+        orderByClause = parseSortField(query);
     }
 
-    private String parseSortField(QuerySpec query, TranslationMapping rootModel) {
+    private String parseSortField(QuerySpec query) {
         if (query.getSortField() == null) {
             return orderByClause;
         } else {
             var order = query.getSortOrder() == SortOrder.ASC ? "ASC" : "DESC";
-            var sortField = rootModel.getStatement(query.getSortField(), String.class);
+            var sortField = sortFieldConverter.convert(query.getSortField());
             if (sortField == null) {
                 throw new IllegalArgumentException(format("Cannot sort by %s because the field does not exist", query.getSortField()));
             }
             return String.format(ORDER_BY_TOKEN + " ", sortField, order);
         }
-    }
-
-    @NotNull
-    private SqlConditionExpression parseExpression(Criterion criterion, TranslationMapping rootModel) {
-        var newCriterion = Optional.ofNullable(criterion.getOperandLeft())
-                .map(Object::toString)
-                .map(it -> rootModel.getStatement(it, criterion.getOperandRight().getClass()))
-                .map(criterion::withLeftOperand)
-                .orElseGet(() -> Criterion.criterion("0", "=", 1));
-
-        var conditionExpression = new SqlConditionExpression(newCriterion);
-
-        conditionExpression.isValidExpression()
-                .orElseThrow(f -> new IllegalArgumentException("This expression is not valid: " + f.getFailureDetail()));
-
-        return conditionExpression;
     }
 
 }

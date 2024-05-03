@@ -24,9 +24,14 @@ dependencies {
     testImplementation(libs.mockserver.netty)
     testImplementation(libs.mockserver.client)
 
+    testImplementation(project(":core:common:connector-core"))
     testImplementation(project(":core:common:junit"))
     testImplementation(testFixtures(project(":extensions:data-plane:data-plane-http")))
-    testImplementation(project(":spi:data-plane:data-plane-spi"))
 
+    testRuntimeOnly(project(":extensions:control-plane:api:control-plane-api-client"))
     testRuntimeOnly(project(":launchers:data-plane-server"))
+}
+
+edcBuild {
+    publish.set(false)
 }

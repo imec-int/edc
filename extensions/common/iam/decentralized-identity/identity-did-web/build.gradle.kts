@@ -6,9 +6,9 @@ plugins {
 dependencies {
     api(project(":spi:common:identity-did-spi"))
     api(project(":spi:common:http-spi"))
-    api(project(":core:common:util"))
+    api(project(":core:common:lib:util-lib"))
 
-    testImplementation(project(":core:common:junit"))
+    testImplementation(testFixtures(project(":core:common:lib:http-lib")))
 }
 
 

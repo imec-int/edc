@@ -14,34 +14,29 @@
 
 package org.eclipse.edc.iam.oauth2.daps;
 
-import org.eclipse.edc.iam.oauth2.spi.Oauth2JwtDecoratorRegistry;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.spi.iam.TokenDecorator;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-
-import static java.lang.String.format;
+import org.eclipse.edc.token.spi.TokenDecorator;
+import org.eclipse.edc.token.spi.TokenDecoratorRegistry;
 
 /**
  * Provides specialization of Oauth2 extension to interact with DAPS instance
- *
- * @deprecated This DAPS specific extension will be deleted and be replaced by configuration values
  */
 @Extension(value = DapsExtension.NAME)
-@Deprecated(since = "0.1.0")
 public class DapsExtension implements ServiceExtension {
 
     public static final String NAME = "DAPS";
     public static final String DEFAULT_TOKEN_SCOPE = "idsc:IDS_CONNECTOR_ATTRIBUTES_ALL";
     @Setting(value = "The value of the scope claim that is passed to DAPS to obtain a DAT", defaultValue = DEFAULT_TOKEN_SCOPE)
     public static final String DAPS_TOKEN_SCOPE = "edc.iam.token.scope";
+    public static final String OAUTH_2_DAPS_TOKEN_CONTEXT = "oauth2-daps";
 
     @Inject
-    private Oauth2JwtDecoratorRegistry jwtDecoratorRegistry;
-
+    private TokenDecoratorRegistry jwtDecoratorRegistry;
 
     @Override
     public String name() {
@@ -50,17 +45,12 @@ public class DapsExtension implements ServiceExtension {
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        jwtDecoratorRegistry.register(new DapsJwtDecorator());
+        jwtDecoratorRegistry.register(OAUTH_2_DAPS_TOKEN_CONTEXT, new DapsJwtDecorator());
     }
 
     @Provider
     public TokenDecorator createDapsTokenDecorator(ServiceExtensionContext context) {
-        var scope = context.getSetting(DAPS_TOKEN_SCOPE, null);
-        if (scope == null) {
-            context.getMonitor().warning(() -> format("The config value '%s' was not supplied, falling back to the default '%s'. " +
-                    "Please be aware that this default will be removed in future releases", DAPS_TOKEN_SCOPE, DEFAULT_TOKEN_SCOPE));
-            scope = DEFAULT_TOKEN_SCOPE;
-        }
+        var scope = context.getConfig().getString(DAPS_TOKEN_SCOPE);
 
         return new DapsTokenDecorator(scope);
     }

@@ -18,10 +18,11 @@ import java.io.InputStream;
 import java.util.stream.Stream;
 
 /**
- * Implements pull semantics for accessing a data source. A data source is composed of one or more named parts. Some implementations may support random access of the underlying
- * part content so that large content transfers can be parallelized.
+ * Implements pull semantics for accessing a data source. A data source is composed of one or more named parts.
+ * Some implementations may support random access of the underlying part content so that large content transfers can be
+ * parallelized.
  */
-public interface DataSource {
+public interface DataSource extends AutoCloseable {
 
     /**
      * Opens a stream to the source parts.
@@ -53,17 +54,12 @@ public interface DataSource {
         InputStream openStream();
 
         /**
-         * Returns true if the part supports random access of its contents. If random access is supported, {@link #read(long, long)} may be invoked.
+         * Content media type.
+         *
+         * @return the part media type.
          */
-        default boolean supportsRandomAccess() {
-            return false;
-        }
-
-        /**
-         * Reads a segment of the underlying data. Implementations must throw {@link UnsupportedOperationException} if random access is not supported.
-         */
-        default byte[] read(long offset, long bytes) {
-            throw new UnsupportedOperationException("Random access not supported");
+        default String mediaType() {
+            return "application/octet-stream";
         }
 
         @Override

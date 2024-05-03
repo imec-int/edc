@@ -28,8 +28,9 @@ dependencies {
     api(project(":extensions:data-plane:data-plane-client"))
     api(project(":spi:data-plane-selector:data-plane-selector-spi"))
 
+    implementation(project(":spi:common:keys-spi"))
     implementation(project(":extensions:common:api:control-api-configuration"))
-    implementation(project(":core:common:jwt-core"))
+    implementation(project(":core:common:token-core"))
 
     api(libs.jakarta.rsApi)
     api(libs.nimbus.jwt)

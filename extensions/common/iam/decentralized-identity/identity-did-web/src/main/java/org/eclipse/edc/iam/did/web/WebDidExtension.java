@@ -14,12 +14,12 @@
 
 package org.eclipse.edc.iam.did.web;
 
+import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.iam.did.spi.resolution.DidResolverRegistry;
 import org.eclipse.edc.iam.did.web.resolution.WebDidResolver;
 import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.spi.http.EdcHttpClient;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.types.TypeManager;
@@ -32,6 +32,11 @@ import org.eclipse.edc.util.string.StringUtils;
 @Extension(value = WebDidExtension.NAME)
 public class WebDidExtension implements ServiceExtension {
     public static final String NAME = "Web DID";
+    /**
+     * If set, the resolver will use the endpoint to resolve DIDs using DNS over HTTPS.
+     */
+    @Setting
+    public static final String DNS_OVER_HTTPS = "edc.webdid.doh.url";
     /**
      * Set to {@code false} to create DID URLs with {@code http} instead of {@code https} scheme.
      * Defaults to {@code true}.
@@ -68,7 +73,7 @@ public class WebDidExtension implements ServiceExtension {
     }
 
     private EdcHttpClient getHttpClient(ServiceExtensionContext context) {
-        var dnsServer = context.getSetting(ConfigurationKeys.DNS_OVER_HTTPS, null);
+        var dnsServer = context.getSetting(DNS_OVER_HTTPS, null);
 
         if (StringUtils.isNullOrEmpty(dnsServer)) {
             return httpClient;

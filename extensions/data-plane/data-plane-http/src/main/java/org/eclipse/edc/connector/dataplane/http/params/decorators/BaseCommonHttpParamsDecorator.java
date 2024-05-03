@@ -14,13 +14,13 @@
 
 package org.eclipse.edc.connector.dataplane.http.params.decorators;
 
+import org.eclipse.edc.connector.dataplane.http.spi.HttpDataAddress;
 import org.eclipse.edc.connector.dataplane.http.spi.HttpParamsDecorator;
 import org.eclipse.edc.connector.dataplane.http.spi.HttpRequestParams;
 import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.security.Vault;
 import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.spi.types.domain.HttpDataAddress;
-import org.eclipse.edc.spi.types.domain.transfer.DataFlowRequest;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowStartMessage;
 
 import java.util.Map;
 import java.util.Optional;
@@ -38,7 +38,7 @@ public class BaseCommonHttpParamsDecorator implements HttpParamsDecorator {
     }
 
     @Override
-    public HttpRequestParams.Builder decorate(DataFlowRequest request, HttpDataAddress address, HttpRequestParams.Builder params) {
+    public HttpRequestParams.Builder decorate(DataFlowStartMessage request, HttpDataAddress address, HttpRequestParams.Builder params) {
         var requestId = request.getId();
         var baseUrl = Optional.ofNullable(address.getBaseUrl())
                 .orElseThrow(() -> new EdcException(format("DataFlowRequest %s: 'baseUrl' property is missing in HttpDataAddress", requestId)));

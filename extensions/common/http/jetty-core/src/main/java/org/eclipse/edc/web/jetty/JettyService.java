@@ -11,6 +11,7 @@
  *       Microsoft Corporation - initial API and implementation
  *       Fraunhofer Institute for Software and Systems Engineering - added method
  *       ZF Friedrichshafen AG - Set connector name
+ *       Materna Information & Communications SE - disable Jetty send server version
  *
  */
 
@@ -122,6 +123,7 @@ public class JettyService implements WebServer {
         }
     }
 
+    @Override
     public void registerServlet(String contextName, Servlet servlet) {
         var servletHolder = new ServletHolder(Source.EMBEDDED);
         servletHolder.setName("EDC-" + contextName);
@@ -203,6 +205,7 @@ public class JettyService implements WebServer {
     @NotNull
     private HttpConnectionFactory httpConnectionFactory() {
         HttpConfiguration https = new HttpConfiguration();
+        https.setSendServerVersion(false);
         return new HttpConnectionFactory(https);
     }
 

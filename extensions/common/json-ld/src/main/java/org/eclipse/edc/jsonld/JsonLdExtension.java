@@ -15,6 +15,7 @@
 package org.eclipse.edc.jsonld;
 
 import org.eclipse.edc.jsonld.spi.JsonLd;
+import org.eclipse.edc.jsonld.spi.JsonLdKeywords;
 import org.eclipse.edc.jsonld.spi.transformer.JsonLdTransformer;
 import org.eclipse.edc.jsonld.util.JacksonJsonLd;
 import org.eclipse.edc.runtime.metamodel.annotation.BaseExtension;
@@ -22,7 +23,7 @@ import org.eclipse.edc.runtime.metamodel.annotation.Extension;
 import org.eclipse.edc.runtime.metamodel.annotation.Inject;
 import org.eclipse.edc.runtime.metamodel.annotation.Provider;
 import org.eclipse.edc.runtime.metamodel.annotation.Setting;
-import org.eclipse.edc.spi.CoreConstants;
+import org.eclipse.edc.spi.constants.CoreConstants;
 import org.eclipse.edc.spi.result.Result;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
@@ -32,19 +33,12 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
-import static org.eclipse.edc.jsonld.spi.Namespaces.DCAT_PREFIX;
-import static org.eclipse.edc.jsonld.spi.Namespaces.DCAT_SCHEMA;
-import static org.eclipse.edc.jsonld.spi.Namespaces.DCT_PREFIX;
-import static org.eclipse.edc.jsonld.spi.Namespaces.DCT_SCHEMA;
-import static org.eclipse.edc.jsonld.spi.Namespaces.DSPACE_PREFIX;
-import static org.eclipse.edc.jsonld.spi.Namespaces.DSPACE_SCHEMA;
-import static org.eclipse.edc.policy.model.OdrlNamespace.ODRL_PREFIX;
-import static org.eclipse.edc.policy.model.OdrlNamespace.ODRL_SCHEMA;
-import static org.eclipse.edc.spi.CoreConstants.EDC_NAMESPACE;
-import static org.eclipse.edc.spi.CoreConstants.EDC_PREFIX;
-import static org.eclipse.edc.spi.CoreConstants.JSON_LD;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_PREFIX;
+import static org.eclipse.edc.spi.constants.CoreConstants.JSON_LD;
 
 /**
  * Adds support for working with JSON-LD. Provides an ObjectMapper that works with Jakarta JSON-P
@@ -66,6 +60,9 @@ public class JsonLdExtension implements ServiceExtension {
     private static final String HTTP_ENABLE_SETTING = "edc.jsonld.http.enabled";
     @Setting(value = "If set enable https json-ld document resolution", type = "boolean", defaultValue = DEFAULT_HTTP_HTTPS_RESOLUTION + "")
     private static final String HTTPS_ENABLE_SETTING = "edc.jsonld.https.enabled";
+    private static final String DEFAULT_AVOID_VOCAB_CONTEXT = "false";
+    @Setting(value = "If true disable the @vocab context definition. This could be used to avoid api breaking changes", type = "boolean", defaultValue = DEFAULT_AVOID_VOCAB_CONTEXT)
+    private static final String AVOID_VOCAB_CONTEXT = "edc.jsonld.vocab.disable";
     @Inject
     private TypeManager typeManager;
 
@@ -88,15 +85,18 @@ public class JsonLdExtension implements ServiceExtension {
                 .build();
         var monitor = context.getMonitor();
         var service = new TitaniumJsonLd(monitor, configuration);
+        if (!config.getBoolean(AVOID_VOCAB_CONTEXT, Boolean.valueOf(DEFAULT_AVOID_VOCAB_CONTEXT))) {
+            service.registerNamespace(JsonLdKeywords.VOCAB, EDC_NAMESPACE);
+        }
         service.registerNamespace(EDC_PREFIX, EDC_NAMESPACE);
-        service.registerNamespace(DCAT_PREFIX, DCAT_SCHEMA);
-        service.registerNamespace(DCT_PREFIX, DCT_SCHEMA);
-        service.registerNamespace(ODRL_PREFIX, ODRL_SCHEMA);
-        service.registerNamespace(DSPACE_PREFIX, DSPACE_SCHEMA);
 
-        getResourceUri("document" + File.separator + "odrl.jsonld")
-                .onSuccess(uri -> service.registerCachedDocument("http://www.w3.org/ns/odrl.jsonld", uri))
-                .onFailure(failure -> monitor.warning("Failed to register cached json-ld document: " + failure.getFailureDetail()));
+        Stream.of(
+                new JsonLdContext("odrl.jsonld", "http://www.w3.org/ns/odrl.jsonld"),
+                new JsonLdContext("dspace.jsonld", "https://w3id.org/dspace/2024/1/context.json")
+        ).forEach(jsonLdContext -> getResourceUri("document" + File.separator + jsonLdContext.fileName())
+                .onSuccess(uri -> service.registerCachedDocument(jsonLdContext.url(), uri))
+                .onFailure(failure -> monitor.warning("Failed to register cached json-ld document: " + failure.getFailureDetail()))
+        );
 
         registerCachedDocumentsFromConfig(context, service);
 
@@ -131,5 +131,6 @@ public class JsonLdExtension implements ServiceExtension {
         }
     }
 
+    record JsonLdContext(String fileName, String url) { }
 
 }

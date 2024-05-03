@@ -26,9 +26,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.ALLOWED_DEST_TYPES;
 import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.ALLOWED_SOURCE_TYPES;
+import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.ALLOWED_TRANSFER_TYPES;
 import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.LAST_ACTIVE;
 import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.PROPERTIES;
-import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.TURNCOUNT;
+import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.TURN_COUNT;
 import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.URL;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.util.JacksonJsonLd.createObjectMapper;
@@ -51,6 +52,7 @@ class JsonObjectFromDataPlaneInstanceTransformerTest {
                 .url("http://foo.bar")
                 .allowedSourceType("test-source-type")
                 .allowedDestType("test-dest-type")
+                .allowedTransferType("test-transfer-type")
                 .lastActive(15)
                 .turnCount(42)
                 .property("foo", "bar")
@@ -63,8 +65,9 @@ class JsonObjectFromDataPlaneInstanceTransformerTest {
         assertThat(jsonObject.getString(URL)).isEqualTo("http://foo.bar");
         assertThat(jsonObject.getJsonArray(ALLOWED_SOURCE_TYPES)).hasSize(1).allMatch(v -> ((JsonString) v).getString().equals("test-source-type"));
         assertThat(jsonObject.getJsonArray(ALLOWED_DEST_TYPES)).hasSize(1).allMatch(v -> ((JsonString) v).getString().equals("test-dest-type"));
+        assertThat(jsonObject.getJsonArray(ALLOWED_TRANSFER_TYPES)).hasSize(1).allMatch(v -> ((JsonString) v).getString().equals("test-transfer-type"));
         assertThat(jsonObject.getJsonNumber(LAST_ACTIVE).intValue()).isEqualTo(15);
-        assertThat(jsonObject.getJsonNumber(TURNCOUNT).intValue()).isEqualTo(42);
+        assertThat(jsonObject.getJsonNumber(TURN_COUNT).intValue()).isEqualTo(42);
         assertThat(jsonObject.getJsonObject(PROPERTIES).getJsonString("foo").getString()).isEqualTo("bar");
 
     }

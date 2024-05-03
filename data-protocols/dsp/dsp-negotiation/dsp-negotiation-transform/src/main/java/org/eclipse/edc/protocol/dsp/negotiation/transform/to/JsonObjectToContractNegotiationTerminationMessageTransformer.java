@@ -16,17 +16,19 @@ package org.eclipse.edc.protocol.dsp.negotiation.transform.to;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
-import org.eclipse.edc.connector.contract.spi.types.negotiation.ContractNegotiationTerminationMessage;
+import org.eclipse.edc.connector.controlplane.contract.spi.types.negotiation.ContractNegotiationTerminationMessage;
 import org.eclipse.edc.jsonld.spi.transformer.AbstractJsonLdTransformer;
 import org.eclipse.edc.transform.spi.TransformerContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static jakarta.json.JsonValue.ValueType.ARRAY;
-import static org.eclipse.edc.protocol.dsp.type.DspNegotiationPropertyAndTypeNames.DSPACE_TYPE_CONTRACT_NEGOTIATION_TERMINATION_MESSAGE;
-import static org.eclipse.edc.protocol.dsp.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_CODE;
-import static org.eclipse.edc.protocol.dsp.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_PROCESS_ID;
-import static org.eclipse.edc.protocol.dsp.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_REASON;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspNegotiationPropertyAndTypeNames.DSPACE_TYPE_CONTRACT_NEGOTIATION_TERMINATION_MESSAGE;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_CODE;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_CONSUMER_PID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_PROCESS_ID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_PROVIDER_PID;
+import static org.eclipse.edc.protocol.dsp.spi.type.DspPropertyAndTypeNames.DSPACE_PROPERTY_REASON;
 
 /**
  * Creates a {@link ContractNegotiationTerminationMessage} from a {@link JsonObject}.
@@ -41,8 +43,30 @@ public class JsonObjectToContractNegotiationTerminationMessageTransformer extend
     public @Nullable ContractNegotiationTerminationMessage transform(@NotNull JsonObject object, @NotNull TransformerContext context) {
         var builder = ContractNegotiationTerminationMessage.Builder.newInstance();
 
-        if (!transformMandatoryString(object.get(DSPACE_PROPERTY_PROCESS_ID), builder::processId, context)) {
-            return null;
+        var processId = object.get(DSPACE_PROPERTY_PROCESS_ID);
+        if (!transformMandatoryString(object.get(DSPACE_PROPERTY_CONSUMER_PID), builder::consumerPid, context)) {
+            if (processId == null) {
+                context.problem()
+                        .missingProperty()
+                        .type(DSPACE_TYPE_CONTRACT_NEGOTIATION_TERMINATION_MESSAGE)
+                        .property(DSPACE_PROPERTY_CONSUMER_PID)
+                        .report();
+                return null;
+            } else {
+                builder.consumerPid(transformString(processId, context));
+            }
+        }
+        if (!transformMandatoryString(object.get(DSPACE_PROPERTY_PROVIDER_PID), builder::providerPid, context)) {
+            if (processId == null) {
+                context.problem()
+                        .missingProperty()
+                        .type(DSPACE_TYPE_CONTRACT_NEGOTIATION_TERMINATION_MESSAGE)
+                        .property(DSPACE_PROPERTY_PROVIDER_PID)
+                        .report();
+                return null;
+            } else {
+                builder.providerPid(transformString(processId, context));
+            }
         }
 
         var code = object.get(DSPACE_PROPERTY_CODE);

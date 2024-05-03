@@ -15,27 +15,27 @@
 package org.eclipse.edc.connector.dataplane.spi.pipeline;
 
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.types.domain.transfer.DataFlowRequest;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowStartMessage;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Creates {@link DataSource}s and optimized {@link PipelineService}s.
+ * Creates {@link DataSource}s.
  */
 public interface DataSourceFactory {
 
     /**
      * Returns true if this factory can create a {@link DataSource} for the request.
      */
-    boolean canHandle(DataFlowRequest request);
+    boolean canHandle(DataFlowStartMessage request);
 
     /**
      * Creates a source to access data to be sent.
      */
-    DataSource createSource(DataFlowRequest request);
+    DataSource createSource(DataFlowStartMessage request);
 
     /**
      * Returns a Result object of the validation result.
      */
-    @NotNull Result<Void> validateRequest(DataFlowRequest request);
+    @NotNull Result<Void> validateRequest(DataFlowStartMessage request);
 
 }

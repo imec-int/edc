@@ -29,7 +29,7 @@ import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlan
 import static org.eclipse.edc.connector.dataplane.selector.spi.instance.DataPlaneInstance.URL;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
-import static org.eclipse.edc.spi.CoreConstants.EDC_NAMESPACE;
+import static org.eclipse.edc.spi.constants.CoreConstants.EDC_NAMESPACE;
 
 public class TestFunctions {
 
@@ -41,12 +41,16 @@ public class TestFunctions {
     }
 
     public static JsonObject createInstanceJson(String id) {
-        return Json.createObjectBuilder()
-                .add(ID, id)
+        return createInstanceJsonBuilder(id)
                 .add(URL, "http://somewhere.com:1234/api/v1")
                 .add(ALLOWED_SOURCE_TYPES, Json.createArrayBuilder(Set.of("source1", "source2")))
                 .add(ALLOWED_DEST_TYPES, Json.createArrayBuilder(Set.of("dest1", "dest2")))
                 .build();
+    }
+
+    public static JsonObjectBuilder createInstanceJsonBuilder(String id) {
+        return Json.createObjectBuilder()
+                .add(ID, id);
     }
 
     public static JsonObject createSelectionRequestJson(String srcType, String destType, String strategy) {

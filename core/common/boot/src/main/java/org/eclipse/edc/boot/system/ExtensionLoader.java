@@ -17,23 +17,24 @@ package org.eclipse.edc.boot.system;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import org.eclipse.edc.boot.monitor.MultiplexingMonitor;
+import org.eclipse.edc.boot.system.injection.InjectionContainer;
 import org.eclipse.edc.boot.system.injection.InjectorImpl;
+import org.eclipse.edc.boot.system.injection.ProviderMethod;
+import org.eclipse.edc.boot.system.injection.ProviderMethodScanner;
 import org.eclipse.edc.boot.system.injection.lifecycle.ExtensionLifecycleManager;
 import org.eclipse.edc.spi.monitor.ConsoleMonitor;
 import org.eclipse.edc.spi.monitor.Monitor;
-import org.eclipse.edc.spi.monitor.MultiplexingMonitor;
 import org.eclipse.edc.spi.system.MonitorExtension;
 import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
-import org.eclipse.edc.spi.system.injection.InjectionContainer;
-import org.eclipse.edc.spi.system.injection.ProviderMethod;
-import org.eclipse.edc.spi.system.injection.ProviderMethodScanner;
 import org.eclipse.edc.spi.telemetry.Telemetry;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -81,14 +82,14 @@ public class ExtensionLoader {
         };
     }
 
-    public static @NotNull Monitor loadMonitor() {
+    public static @NotNull Monitor loadMonitor(String... programArgs) {
         var loader = ServiceLoader.load(MonitorExtension.class);
-        return loadMonitor(loader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList()));
+        return loadMonitor(loader.stream().map(ServiceLoader.Provider::get).collect(Collectors.toList()), programArgs);
     }
 
-    static @NotNull Monitor loadMonitor(List<MonitorExtension> availableMonitors) {
+    static @NotNull Monitor loadMonitor(List<MonitorExtension> availableMonitors, String... programArgs) {
         if (availableMonitors.isEmpty()) {
-            return new ConsoleMonitor();
+            return new ConsoleMonitor(!Set.of(programArgs).contains("--no-color"));
         }
 
         if (availableMonitors.size() > 1) {

@@ -19,6 +19,7 @@ import org.eclipse.edc.spi.query.SortOrder;
 
 import java.util.List;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.TYPE;
 import static org.eclipse.edc.spi.query.Criterion.CRITERION_TYPE;
@@ -30,13 +31,16 @@ public interface ApiCoreSchema {
     record CriterionSchema(
             @Schema(name = TYPE, example = CRITERION_TYPE)
             String type,
+            @Schema(requiredMode = REQUIRED)
             Object operandLeft,
+            @Schema(requiredMode = REQUIRED)
             String operator,
+            @Schema(requiredMode = REQUIRED)
             Object operandRight) {
 
         public static final String CRITERION_EXAMPLE = """
                 {
-                    "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+                    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
                     "@type": "Criterion",
                     "operandLeft": "fieldName",
                     "operator": "=",
@@ -57,7 +61,7 @@ public interface ApiCoreSchema {
     ) {
         public static final String QUERY_SPEC_EXAMPLE = """
                 {
-                    "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+                    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
                     "@type": "QuerySpec",
                     "offset": 5,
                     "limit": 10,
@@ -76,9 +80,26 @@ public interface ApiCoreSchema {
     ) {
         public static final String ID_RESPONSE_EXAMPLE = """
                 {
-                    "@context": { "edc": "https://w3id.org/edc/v0.0.1/ns/" },
+                    "@context": { "@vocab": "https://w3id.org/edc/v0.0.1/ns/" },
                     "@id": "id-value",
                     "createdAt": 1688465655
+                }
+                """;
+    }
+
+    @Schema(name = "ApiErrorDetail", example = ApiErrorDetailSchema.API_ERROR_EXAMPLE)
+    record ApiErrorDetailSchema(
+            String message,
+            String type,
+            String path,
+            String invalidValue
+    ) {
+        public static final String API_ERROR_EXAMPLE = """
+                {
+                    "message": "error message",
+                    "type": "ErrorType",
+                    "path": "object.error.path",
+                    "invalidValue": "this value is not valid"
                 }
                 """;
     }

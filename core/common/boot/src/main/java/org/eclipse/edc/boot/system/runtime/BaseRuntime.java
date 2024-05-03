@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2020 - 2022 Microsoft Corporation
+ *  Copyright (c) 2020 - 2024 Microsoft Corporation
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -16,11 +16,12 @@
 package org.eclipse.edc.boot.system.runtime;
 
 
-import org.eclipse.edc.boot.monitor.MonitorProvider;
 import org.eclipse.edc.boot.system.DefaultServiceExtensionContext;
 import org.eclipse.edc.boot.system.ExtensionLoader;
 import org.eclipse.edc.boot.system.ServiceLocator;
 import org.eclipse.edc.boot.system.ServiceLocatorImpl;
+import org.eclipse.edc.boot.system.injection.InjectionContainer;
+import org.eclipse.edc.spi.EdcException;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.system.ConfigurationExtension;
 import org.eclipse.edc.spi.system.MonitorExtension;
@@ -28,7 +29,6 @@ import org.eclipse.edc.spi.system.ServiceExtension;
 import org.eclipse.edc.spi.system.ServiceExtensionContext;
 import org.eclipse.edc.spi.system.health.HealthCheckResult;
 import org.eclipse.edc.spi.system.health.HealthCheckService;
-import org.eclipse.edc.spi.system.injection.InjectionContainer;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -52,8 +52,7 @@ import static java.lang.String.format;
  */
 public class BaseRuntime {
 
-    protected final ServiceLocator serviceLocator;
-    private final AtomicReference<HealthCheckResult> startupStatus = new AtomicReference<>(HealthCheckResult.failed("Startup not complete"));
+    private static String[] programArgs = new String[0];
     private final ExtensionLoader extensionLoader;
     private final List<ServiceExtension> serviceExtensions = new ArrayList<>();
     protected Monitor monitor;
@@ -64,38 +63,50 @@ public class BaseRuntime {
 
     protected BaseRuntime(ServiceLocator serviceLocator) {
         extensionLoader = new ExtensionLoader(serviceLocator);
-        this.serviceLocator = serviceLocator;
     }
 
     public static void main(String[] args) {
-        BaseRuntime runtime = new BaseRuntime();
+        programArgs = args;
+        var runtime = new BaseRuntime();
         runtime.boot();
-    }
-
-    protected Monitor getMonitor() {
-        return monitor;
     }
 
     /**
      * Main entry point to runtime initialization. Calls all methods
      * and sets up a context shutdown hook at runtime shutdown.
      */
-    protected void boot() {
+    public void boot() {
         boot(true);
     }
 
     /**
      * Main entry point to runtime initialization. Calls all methods.
      */
-    protected void bootWithoutShutdownHook() {
+    public void bootWithoutShutdownHook() {
         boot(false);
+    }
+
+    /**
+     * Hook that is called when a runtime is shutdown (e.g. after a CTRL-C command on a command line). It is highly advisable to
+     * forward this signal to all extensions through their {@link ServiceExtension#shutdown()} callback.
+     */
+    public void shutdown() {
+        var iter = serviceExtensions.listIterator(serviceExtensions.size());
+        while (iter.hasPrevious()) {
+            var extension = iter.previous();
+            extension.shutdown();
+            monitor.info("Shutdown " + extension.name());
+            iter.remove();
+        }
+        monitor.info("Shutdown complete");
+    }
+
+    protected Monitor getMonitor() {
+        return monitor;
     }
 
     @NotNull
     protected ServiceExtensionContext createServiceExtensionContext() {
-        monitor = createMonitor();
-        MonitorProvider.setInstance(monitor);
-
         var context = createContext(monitor);
         initializeContext(context);
         return context;
@@ -124,11 +135,7 @@ public class BaseRuntime {
      */
     protected void onError(Exception e) {
         monitor.severe(String.format("Error booting runtime: %s", e.getMessage()), e);
-        exit();
-    }
-
-    protected void exit() {
-        System.exit(-1);  // stop the process
+        throw new EdcException(e);
     }
 
     /**
@@ -142,7 +149,7 @@ public class BaseRuntime {
     }
 
     /**
-     * Create a list of {@link ServiceExtension}s. By default this is done using the ServiceLoader mechanism. Override if
+     * Create a list of {@link ServiceExtension}s. By default, this is done using the ServiceLoader mechanism. Override if
      * e.g. a custom DI mechanism should be used.
      *
      * @return a list of {@code ServiceExtension}s
@@ -155,7 +162,7 @@ public class BaseRuntime {
      * Create a {@link ServiceExtensionContext} that will be used in this runtime. If e.g. a third-party dependency-injection framework were to be used,
      * this would likely need to be overridden.
      *
-     * @param monitor     a Monitor
+     * @param monitor a Monitor
      * @return a {@code ServiceExtensionContext}
      */
     @NotNull
@@ -168,37 +175,23 @@ public class BaseRuntime {
     }
 
     /**
-     * Hook that is called when a runtime is shutdown (e.g. after a CTRL-C command on a command line). It is highly advisable to
-     * forward this signal to all extensions through their {@link ServiceExtension#shutdown()} callback.
-     */
-    protected void shutdown() {
-        var iter = serviceExtensions.listIterator(serviceExtensions.size());
-        while (iter.hasPrevious()) {
-            var extension = iter.previous();
-            extension.shutdown();
-            monitor.info("Shutdown " + extension.name());
-            iter.remove();
-        }
-        monitor.info("Shutdown complete");
-    }
-
-    /**
-     * Hook point to instantiate a {@link Monitor}. By default, the runtime instantiates a {@code Monitor} using the Service Loader mechanism, i.e. by calling the {@link ExtensionLoader#loadMonitor()} method.
+     * Hook point to instantiate a {@link Monitor}. By default, the runtime instantiates a {@code Monitor} using the Service Loader mechanism, i.e. by calling the {@link ExtensionLoader#loadMonitor(String...)} method.
      * <p>
      * Please consider using the extension mechanism (i.e. {@link MonitorExtension}) rather than supplying a custom monitor by overriding this method.
      * However, for development/testing scenarios it might be an easy solution to just override this method.
      */
     @NotNull
     protected Monitor createMonitor() {
-        return ExtensionLoader.loadMonitor();
+        return ExtensionLoader.loadMonitor(programArgs);
     }
 
     private void boot(boolean addShutdownHook) {
-        ServiceExtensionContext context = createServiceExtensionContext();
+        monitor = createMonitor();
+        var context = createServiceExtensionContext();
 
         var name = getRuntimeName(context);
         try {
-            List<InjectionContainer<ServiceExtension>> newExtensions = createExtensions(context);
+            var newExtensions = createExtensions(context);
             bootExtensions(context, newExtensions);
 
             newExtensions.stream().map(InjectionContainer::getInjectionTarget).forEach(serviceExtensions::add);
@@ -206,21 +199,21 @@ public class BaseRuntime {
                 getRuntime().addShutdownHook(new Thread(this::shutdown));
             }
 
-            var healthCheckService = context.getService(HealthCheckService.class);
-            healthCheckService.addStartupStatusProvider(this::getStartupStatus);
+            if (context.hasService(HealthCheckService.class)) {
+                var startupStatus = new AtomicReference<>(HealthCheckResult.failed("Startup not complete"));
+                var healthCheckService = context.getService(HealthCheckService.class);
+                healthCheckService.addStartupStatusProvider(startupStatus::get);
 
-            startupStatus.set(HealthCheckResult.success());
+                startupStatus.set(HealthCheckResult.success());
 
-            healthCheckService.refresh();
+                healthCheckService.refresh();
+            }
+
         } catch (Exception e) {
             onError(e);
         }
 
         monitor.info(format("%s ready", name));
-    }
-
-    private HealthCheckResult getStartupStatus() {
-        return startupStatus.get();
     }
 
 }

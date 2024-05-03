@@ -14,65 +14,63 @@
 
 package org.eclipse.edc.connector.dataplane.spi.manager;
 
-import org.eclipse.edc.connector.dataplane.spi.pipeline.DataSink;
-import org.eclipse.edc.connector.dataplane.spi.pipeline.DataSource;
-import org.eclipse.edc.connector.dataplane.spi.pipeline.StreamResult;
-import org.eclipse.edc.connector.dataplane.spi.store.DataPlaneStore.State;
+import org.eclipse.edc.connector.dataplane.spi.DataFlowStates;
 import org.eclipse.edc.runtime.metamodel.annotation.ExtensionPoint;
+import org.eclipse.edc.spi.entity.StateEntityManager;
+import org.eclipse.edc.spi.response.StatusResult;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.types.domain.transfer.DataFlowRequest;
-
-import java.util.concurrent.CompletableFuture;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowResponseMessage;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowStartMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Manages the execution of data plane requests. Methods that return {@link StreamResult} from their futures can use that value to respond to different failure conditions.
- * For example:
- * <p>
- * <pre>
- * dataPlaneManager.transfer(sink, flowRequest).whenComplete((result, throwable) -&gt; {
- *      if (result != null &amp;&amp; result.failed()) {
- *          switch (result.reason()) {
- *              case NOT_FOUND:
- *                  // process
- *                  break;
- *              case NOT_AUTHORIZED:
- *                  // process
- *                  break;
- *              case GENERAL_ERROR:
- *                  // process
- *                  break;
- *              }
- *      } else if (throwable != null) {
- *          reportError(response, throwable);
- *      }
- * });
- * </pre>
+ * Manages the execution of data plane requests.
  */
 @ExtensionPoint
-public interface DataPlaneManager {
+public interface DataPlaneManager extends StateEntityManager {
 
     /**
      * Determines if the data flow request is valid and can be processed by this runtime.
      */
-    Result<Boolean> validate(DataFlowRequest dataRequest);
+    Result<Boolean> validate(DataFlowStartMessage dataRequest);
 
     /**
-     * Initiates a transfer for the data flow request. This method is non-blocking with respect to processing the request.
+     * Starts a transfer for the data flow request. This method is non-blocking with respect to processing the request.
+     *
+     * @param startMessage The {@link DataFlowStartMessage}
+     * @return success with the {@link DataFlowResponseMessage} if the request was correctly processed, failure otherwise
      */
-    void initiateTransfer(DataFlowRequest dataRequest);
-
-    /**
-     * Performs a data transfer using the supplied data source.
-     */
-    CompletableFuture<StreamResult<Void>> transfer(DataSource source, DataFlowRequest request);
-
-    /**
-     * Performs a data transfer using the supplied data sink.
-     */
-    CompletableFuture<StreamResult<Void>> transfer(DataSink sink, DataFlowRequest request);
+    Result<DataFlowResponseMessage> start(DataFlowStartMessage startMessage);
 
     /**
      * Returns the transfer state for the process.
      */
-    State transferState(String processId);
+    DataFlowStates getTransferState(String processId);
+
+    /**
+     * Terminate the data flow.
+     *
+     * @param dataFlowId the data flow id.
+     * @return success if data flow is terminated, failed otherwise.
+     */
+    default StatusResult<Void> terminate(String dataFlowId) {
+        return terminate(dataFlowId, null);
+    }
+
+    /**
+     * Suspend the data flow.
+     *
+     * @param dataFlowId the data flow id.
+     * @return success if data flow is terminated, failed otherwise.
+     */
+    StatusResult<Void> suspend(String dataFlowId);
+
+    /**
+     * Terminate the data flow and specifies a reason.
+     *
+     * @param dataFlowId the data flow id.
+     * @param reason     the reason for the termination. May be null.
+     * @return success if data flow is terminated, failed otherwise.
+     */
+    StatusResult<Void> terminate(String dataFlowId, @Nullable String reason);
 }

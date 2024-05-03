@@ -17,7 +17,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":core:common:jwt-core"))
+    implementation(project(":core:common:token-core"))
     implementation(project(":core:control-plane:control-plane-core"))
     implementation(project(":data-protocols:dsp"))
     implementation(project(":extensions:common:http"))
@@ -28,7 +28,6 @@ dependencies {
     implementation(project(":extensions:data-plane:data-plane-client"))
 
     implementation(project(":core:data-plane-selector:data-plane-selector-core"))
-    implementation(project(":extensions:data-plane-selector:data-plane-selector-client"))
 }
 
 edcBuild {

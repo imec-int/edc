@@ -14,15 +14,13 @@
 
 package org.eclipse.edc.iam.oauth2.daps;
 
-import org.eclipse.edc.spi.iam.TokenDecorator;
+import org.eclipse.edc.jwt.spi.JwtRegisteredClaimNames;
 import org.eclipse.edc.spi.iam.TokenParameters;
+import org.eclipse.edc.token.spi.TokenDecorator;
 
 /**
  * Token decorator that sets the {@code scope} claim on the token that is used on DSP request egress
- *
- * @deprecated In future releases this will be replaced by a config value "edc.iam.token.scope"
  */
-@Deprecated(since = "0.1.0")
 public class DapsTokenDecorator implements TokenDecorator {
     private final String scope;
 
@@ -32,6 +30,6 @@ public class DapsTokenDecorator implements TokenDecorator {
 
     @Override
     public TokenParameters.Builder decorate(TokenParameters.Builder tokenParametersBuilder) {
-        return tokenParametersBuilder.scope(scope);
+        return tokenParametersBuilder.claims(JwtRegisteredClaimNames.SCOPE, scope);
     }
 }

@@ -19,9 +19,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.edc.spi.persistence.EdcPersistenceException;
 import org.eclipse.edc.sql.QueryExecutor;
-import org.eclipse.edc.sql.SqlQueryExecutor;
 import org.eclipse.edc.transaction.datasource.spi.DataSourceRegistry;
 import org.eclipse.edc.transaction.spi.TransactionContext;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -36,20 +36,6 @@ public abstract class AbstractSqlStore {
     private final String dataSourceName;
     protected final QueryExecutor queryExecutor;
     private final ObjectMapper objectMapper;
-
-    /**
-     * Deprecated constructor
-     *
-     * @param dataSourceRegistry registry
-     * @param dataSourceName dataSourceName
-     * @param transactionContext transactionContext
-     * @param objectMapper objectMapper
-     * @deprecated please use {@link #AbstractSqlStore(DataSourceRegistry, String, TransactionContext, ObjectMapper, QueryExecutor)}
-     */
-    @Deprecated(since = "0.1.0")
-    public AbstractSqlStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext, ObjectMapper objectMapper) {
-        this(dataSourceRegistry, dataSourceName, transactionContext, objectMapper, new SqlQueryExecutor());
-    }
 
     public AbstractSqlStore(DataSourceRegistry dataSourceRegistry, String dataSourceName, TransactionContext transactionContext, ObjectMapper objectMapper, QueryExecutor queryExecutor) {
         this.dataSourceRegistry = Objects.requireNonNull(dataSourceRegistry);
@@ -109,7 +95,14 @@ public abstract class AbstractSqlStore {
         }
     }
 
+    @NotNull
+    protected <T> TypeReference<T> getTypeRef() {
+        return new TypeReference<>() {
+        };
+    }
+
     private DataSource getDataSource() {
         return Objects.requireNonNull(dataSourceRegistry.resolve(dataSourceName), format("DataSource %s could not be resolved", dataSourceName));
     }
+
 }

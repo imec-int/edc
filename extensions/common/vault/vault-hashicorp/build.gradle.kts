@@ -19,9 +19,12 @@ dependencies {
     api(project(":spi:common:core-spi"))
     api(project(":spi:common:http-spi"))
 
-    implementation(project(":core:common:util"))
+    implementation(project(":core:common:lib:util-lib"))
 
+    testImplementation(project(":core:common:connector-core"))
+    testImplementation(testFixtures(project(":core:common:lib:http-lib")))
     testImplementation(project(":core:common:junit"))
+    testImplementation(libs.jakartaJson)
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.vault)
     implementation(libs.bouncyCastle.bcpkixJdk18on)

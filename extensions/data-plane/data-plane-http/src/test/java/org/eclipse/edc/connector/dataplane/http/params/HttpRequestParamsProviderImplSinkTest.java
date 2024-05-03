@@ -14,11 +14,11 @@
 
 package org.eclipse.edc.connector.dataplane.http.params;
 
+import org.eclipse.edc.connector.dataplane.http.spi.HttpDataAddress;
 import org.eclipse.edc.connector.dataplane.http.spi.HttpRequestParamsProvider;
+import org.eclipse.edc.json.JacksonTypeManager;
 import org.eclipse.edc.spi.security.Vault;
-import org.eclipse.edc.spi.types.TypeManager;
-import org.eclipse.edc.spi.types.domain.HttpDataAddress;
-import org.eclipse.edc.spi.types.domain.transfer.DataFlowRequest;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowStartMessage;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 
 class HttpRequestParamsProviderImplSinkTest {
 
-    private final HttpRequestParamsProvider provider = new HttpRequestParamsProviderImpl(mock(Vault.class), new TypeManager());
+    private final HttpRequestParamsProvider provider = new HttpRequestParamsProviderImpl(mock(Vault.class), new JacksonTypeManager());
 
     @Test
     void shouldMapDataFlowRequestToHttpRequest() {
@@ -40,7 +40,7 @@ class HttpRequestParamsProviderImplSinkTest {
                 .contentType("test/content-type")
                 .nonChunkedTransfer(true)
                 .build();
-        var dataFlowRequest = DataFlowRequest.Builder.newInstance()
+        var dataFlowRequest = DataFlowStartMessage.Builder.newInstance()
                 .processId(UUID.randomUUID().toString())
                 .sourceDataAddress(dummyAddress())
                 .destinationDataAddress(destination)
@@ -62,7 +62,7 @@ class HttpRequestParamsProviderImplSinkTest {
         var destination = HttpDataAddress.Builder.newInstance()
                 .baseUrl("http://destination")
                 .build();
-        var dataFlowRequest = DataFlowRequest.Builder.newInstance()
+        var dataFlowRequest = DataFlowStartMessage.Builder.newInstance()
                 .processId(UUID.randomUUID().toString())
                 .sourceDataAddress(dummyAddress())
                 .destinationDataAddress(destination)

@@ -14,38 +14,51 @@
 
 package org.eclipse.edc.connector.dataplane.store.sql.schema;
 
-import org.eclipse.edc.sql.statement.SqlStatements;
+import org.eclipse.edc.spi.query.QuerySpec;
+import org.eclipse.edc.sql.lease.LeaseStatements;
+import org.eclipse.edc.sql.lease.StatefulEntityStatements;
+import org.eclipse.edc.sql.translation.SqlQueryStatement;
 
 /**
  * Sql Statements for DataPlane Store
  */
-public interface DataPlaneStatements extends SqlStatements {
+public interface DataPlaneStatements extends StatefulEntityStatements, LeaseStatements {
+
+    default String getIdColumn() {
+        return "process_id";
+    }
 
     default String getDataPlaneTable() {
         return "edc_data_plane";
     }
 
-    default String getProcessIdColumn() {
-        return "process_id";
+    default String getCallbackAddressColumn() {
+        return "callback_address";
     }
 
-    default String getCreatedAtColumn() {
-        return "created_at";
+    default String getSourceColumn() {
+        return "source";
     }
 
-    default String getUpdatedAtColumn() {
-        return "updated_at";
+    default String getDestinationColumn() {
+        return "destination";
     }
 
-    default String getStateColumn() {
-        return "state";
+    default String getPropertiesColumn() {
+        return "properties";
     }
 
-    String getFindByIdTemplate();
+    default String getFlowTypeColumn() {
+        return "flow_type";
+    }
 
     String getInsertTemplate();
 
     String getUpdateTemplate();
+
+    String getSelectTemplate();
+
+    SqlQueryStatement createQuery(QuerySpec querySpec);
 
 }
 

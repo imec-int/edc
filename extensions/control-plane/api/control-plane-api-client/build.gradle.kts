@@ -22,6 +22,7 @@ dependencies {
 
     implementation(libs.failsafe.core)
 
+    testImplementation(project(":core:common:connector-core"))
     testImplementation(project(":core:common:junit"))
     testImplementation(project(":core:control-plane:control-plane-core"))
     testImplementation(project(":core:data-plane:data-plane-core"))
@@ -29,6 +30,8 @@ dependencies {
     testImplementation(project(":extensions:control-plane:api:control-plane-api"))
     testImplementation(project(":extensions:common:auth:auth-tokenbased"))
     testImplementation(libs.awaitility)
+
+    testImplementation(testFixtures(project(":core:common:lib:http-lib")))
 
 }
 

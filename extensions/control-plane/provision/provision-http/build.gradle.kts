@@ -24,14 +24,17 @@ dependencies {
     api(project(":spi:common:web-spi"))
     implementation(project(":extensions:common:api:api-core"))
     implementation(project(":extensions:common:api:management-api-configuration"))
+    implementation(project(":extensions:common:validator:validator-data-address-http-data"))
 
     implementation(libs.jakarta.rsApi)
 
+    testImplementation(project(":core:common:connector-core"))
     testImplementation(project(":core:control-plane:control-plane-core"))
     testImplementation(project(":core:common:junit"))
     testImplementation(project(":core:data-plane-selector:data-plane-selector-core"))
     testImplementation(project(":extensions:common:http"))
     testImplementation(project(":extensions:common:json-ld"))
+    testImplementation(testFixtures(project(":core:common:lib:http-lib")))
     testImplementation(testFixtures(project(":extensions:common:http:jersey-core")))
     testImplementation(libs.restAssured)
     testImplementation(libs.awaitility)

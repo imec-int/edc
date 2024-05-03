@@ -19,19 +19,19 @@ import org.eclipse.edc.connector.dataplane.http.params.HttpRequestFactory;
 import org.eclipse.edc.connector.dataplane.http.spi.HttpRequestParamsProvider;
 import org.eclipse.edc.connector.dataplane.spi.pipeline.DataSink;
 import org.eclipse.edc.connector.dataplane.spi.pipeline.DataSinkFactory;
-import org.eclipse.edc.spi.http.EdcHttpClient;
+import org.eclipse.edc.dataaddress.httpdata.spi.HttpDataAddressSchema;
+import org.eclipse.edc.http.spi.EdcHttpClient;
 import org.eclipse.edc.spi.monitor.Monitor;
 import org.eclipse.edc.spi.result.Result;
-import org.eclipse.edc.spi.types.domain.HttpDataAddress;
-import org.eclipse.edc.spi.types.domain.transfer.DataFlowRequest;
+import org.eclipse.edc.spi.types.domain.transfer.DataFlowStartMessage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
 
-import static org.eclipse.edc.spi.types.domain.HttpDataAddress.HTTP_DATA;
+import static org.eclipse.edc.dataaddress.httpdata.spi.HttpDataAddressSchema.HTTP_DATA_TYPE;
 
 /**
- * Instantiates {@link HttpDataSink}s for requests whose source data type is {@link HttpDataAddress#HTTP_DATA}.
+ * Instantiates {@link HttpDataSink}s for requests whose source data type is {@link HttpDataAddressSchema#HTTP_DATA_TYPE}.
  */
 public class HttpDataSinkFactory implements DataSinkFactory {
     private final EdcHttpClient httpClient;
@@ -55,12 +55,12 @@ public class HttpDataSinkFactory implements DataSinkFactory {
     }
 
     @Override
-    public boolean canHandle(DataFlowRequest request) {
-        return HTTP_DATA.equals(request.getDestinationDataAddress().getType());
+    public boolean canHandle(DataFlowStartMessage request) {
+        return HTTP_DATA_TYPE.equals(request.getDestinationDataAddress().getType());
     }
 
     @Override
-    public @NotNull Result<Void> validateRequest(DataFlowRequest request) {
+    public @NotNull Result<Void> validateRequest(DataFlowStartMessage request) {
         try {
             createSink(request);
         } catch (Exception e) {
@@ -70,7 +70,7 @@ public class HttpDataSinkFactory implements DataSinkFactory {
     }
 
     @Override
-    public DataSink createSink(DataFlowRequest request) {
+    public DataSink createSink(DataFlowStartMessage request) {
         return HttpDataSink.Builder.newInstance()
                 .params(requestParamsProvider.provideSinkParams(request))
                 .requestId(request.getId())

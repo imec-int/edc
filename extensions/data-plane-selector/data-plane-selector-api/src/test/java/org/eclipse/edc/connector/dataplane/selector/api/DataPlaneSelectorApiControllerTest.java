@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.edc.connector.dataplane.selector.TestFunctions.createInstance;
 import static org.eclipse.edc.connector.dataplane.selector.TestFunctions.createInstanceBuilder;
 import static org.eclipse.edc.connector.dataplane.selector.TestFunctions.createInstanceJson;
+import static org.eclipse.edc.connector.dataplane.selector.TestFunctions.createInstanceJsonBuilder;
 import static org.eclipse.edc.connector.dataplane.selector.TestFunctions.createSelectionRequestJson;
 import static org.eclipse.edc.jsonld.spi.JsonLdKeywords.ID;
 import static org.hamcrest.Matchers.equalTo;
@@ -77,15 +78,30 @@ public class DataPlaneSelectorApiControllerTest {
     void addEntry(DataPlaneInstanceStore store) {
         var dpi = createInstanceJson("test-id");
 
+        var result = baseRequest()
+                .body(dpi)
+                .contentType(JSON)
+                .post()
+                .then()
+                .statusCode(200)
+                .extract().body().as(JsonObject.class);
+
+        assertThat(result.getString(ID)).isEqualTo("test-id");
+        assertThat(store.getAll()).hasSize(1)
+                .allMatch(d -> d.getId().equals("test-id"));
+    }
+
+    @Test
+    void addEntry_fails_whenMissingUrl(DataPlaneInstanceStore store) {
+        var dpi = createInstanceJsonBuilder("test-id").build();
+
         baseRequest()
                 .body(dpi)
                 .contentType(JSON)
                 .post()
                 .then()
-                .statusCode(204);
+                .statusCode(400);
 
-        assertThat(store.getAll()).hasSize(1)
-                .allMatch(d -> d.getId().equals("test-id"));
     }
 
     @Test
@@ -105,7 +121,7 @@ public class DataPlaneSelectorApiControllerTest {
                 .contentType(JSON)
                 .post()
                 .then()
-                .statusCode(204);
+                .statusCode(200);
 
 
         assertThat(store.getAll()).hasSize(3)
